@@ -2877,23 +2877,10 @@ pfnVGUI2DrawCharacter
 */
 static int GAME_EXPORT pfnVGUI2DrawCharacter( int x, int y, int number, unsigned int font )
 {
-	if( !cls.creditsFont.valid )
-		return 0;
+	if( !hud_utf8->value )
+		number = Con_UtfProcessChar( number );
 
-	number &= 255;
-
-	number = Con_UtfProcessChar( number );
-
-	if( number < 32 ) return 0;
-	if( y < -clgame.scrInfo.iCharHeight )
-		return 0;
-
-	clgame.ds.adjust_size = true;
-	gameui.ds.gl_texturenum = cls.creditsFont.hFontTexture;
-	pfnPIC_DrawAdditive( x, y, -1, -1, &cls.creditsFont.fontRc[number] );
-	clgame.ds.adjust_size = false;
-
-	return clgame.scrInfo.charWidths[number];
+	return VGui_DrawCharacter( x, y, number, clgame.ds.textColor[0], clgame.ds.textColor[1], clgame.ds.textColor[2], font, false );
 }
 
 /*
@@ -2907,7 +2894,7 @@ static int GAME_EXPORT pfnVGUI2DrawCharacterAdditive( int x, int y, int ch, int 
 	if( !hud_utf8->value )
 		ch = Con_UtfProcessChar( ch );
 
-	return pfnDrawCharacter( x, y, ch, r, g, b );
+	return VGui_DrawCharacter( x, y, ch, r, g, b, font, true );
 }
 
 /*
@@ -2921,12 +2908,13 @@ static int GAME_EXPORT pfnDrawString( int x, int y, const char *str, int r, int 
 	Con_UtfProcessChar(0);
 
 	// draw the string until we hit the null character or a newline character
+	int width = 0;
 	for ( ; *str != 0 && *str != '\n'; str++ )
 	{
-		x += pfnVGUI2DrawCharacterAdditive( x, y, (unsigned char)*str, r, g, b, 0 );
+		width += pfnVGUI2DrawCharacterAdditive( x + width, y, (unsigned char)*str, r, g, b, 0 );
 	}
 
-	return x;
+	return width;
 }
 
 /*
@@ -2939,10 +2927,11 @@ static int GAME_EXPORT pfnDrawStringReverse( int x, int y, const char *str, int 
 {
 	// find the end of the string
 	char *szIt;
+	int width = 0;
 	for( szIt = (char*)str; *szIt != 0; szIt++ )
-		x -= clgame.scrInfo.charWidths[ (unsigned char) *szIt ];
-	pfnDrawString( x, y, str, r, g, b );
-	return x;
+		width += clgame.scrInfo.charWidths[ (unsigned char) *szIt ];
+	pfnDrawString( x - width, y, str, r, g, b );
+	return width;
 }
 
 /*
@@ -4036,6 +4025,8 @@ qboolean CL_LoadProgs( const char *name )
 		clgame.hInstance = NULL;
 		return false;
 	}
+
+	VGui_PostClientInit();
 
 	Cvar_FullSet( "host_clientloaded", "1", FCVAR_READ_ONLY );
 

@@ -13,3 +13,6 @@
 [submodule "ref_gl/gl4es"]
 	path = ref_gl/gl4es
 	url = https://github.com/ptitSeb/gl4es
+[submodule "vgui_support/miniutl"]
+	path = vgui_support/miniutl
+	url = https://github.com/FWGS/MiniUTL.git

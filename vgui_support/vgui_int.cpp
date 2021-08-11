@@ -25,6 +25,17 @@ from your version.
 
 #include "vgui_main.h"
 #include "xash3d_types.h"
+
+#include "vgui2/IEngineSurface.h"
+
+void VGui2_Startup();
+void VGui2_PostClientInit(IEngineSurface *engineSurface);
+void VGui2_Shutdown();
+void VGui2_Paint();
+int VGui2_DrawCharacter(int x, int y, int ch, int r, int g, int b, unsigned int font, qboolean additive);
+qboolean VGui2_NeedMouse();
+qboolean VGui2_NeedKeyboard();
+
 namespace vgui_support {
 
 vguiapi_t *g_api;
@@ -59,10 +70,14 @@ void VGui_Startup( int width, int height )
 	//ASSERT( rootpanel->getSurfaceBase() != NULL );
 
 	g_api->DrawInit ();
+
+	VGui2_Startup();
 }
 
 void VGui_Shutdown( void )
 {
+	VGui2_Shutdown();
+	
 	staticApp.stop();
 
 	delete rootpanel;
@@ -97,11 +112,17 @@ void VGui_Paint( void )
 	// paint everything 
 	pVPanel->paintTraverse();
 
+	VGui2_Paint();
+
 	EnableScissor( false );
 }
 void *VGui_GetPanel( void )
 {
 	return (void *)rootpanel;
+}
+void VGui_PostClientInit( void )
+{
+	VGui2_PostClientInit((IEngineSurface *)surface);
 }
 }
 
@@ -119,4 +140,9 @@ extern "C" EXPORT void InitAPI(vguiapi_t * api)
 	g_api->Mouse = VGUI_Mouse;
 	g_api->MouseMove = VGUI_MouseMove;
 	g_api->Key = VGUI_Key;
+
+	g_api->PostClientInit = VGui_PostClientInit;
+	g_api->DrawCharacter = VGui2_DrawCharacter;
+	g_api->NeedMouse = VGui2_NeedMouse;
+	g_api->NeedKeyboard = VGui2_NeedKeyboard;
 }

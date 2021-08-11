@@ -211,5 +211,15 @@ typedef struct  vguiapi_s
 	void	(*Mouse)(enum VGUI_MouseAction action, int code );
 	void	(*Key)(enum VGUI_KeyAction action,enum VGUI_KeyCode code );
 	void	(*MouseMove)( int x, int y );
+
+	// For VGUI2
+	void	(*SetupDrawingTextAdditive)( int *pColor );
+	void	(*UploadTextureFile)( int id, const char *filename );
+	void	(*UploadTextureBGRA)( int id, const char *buffer, int width, int height );
+	void	(*UploadTextureBlockBGRA)( int id, int drawX, int drawY, const byte *rgba, int blockWidth, int blockHeight );
+	void	(*PostClientInit)();
+	int 	(*DrawCharacter)(int x, int y, int ch, int r, int g, int b, unsigned int font, qboolean additive);
+	qboolean	(*NeedMouse)();
+	qboolean	(*NeedKeyboard)();
 } vguiapi_t;
 #endif // VGUI_API_H

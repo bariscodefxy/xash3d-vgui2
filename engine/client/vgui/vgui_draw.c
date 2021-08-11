@@ -190,6 +190,14 @@ vguiapi_t vgui =
 	NULL,
 	NULL,
 	NULL,
+	NULL, // VGUI_SetupDrawingTextAdditive
+	NULL, // VGUI_UploadTextureFile
+	NULL, // VGUI_UploadTextureBGRA
+	NULL, // VGUI_UploadTextureBlockBGRA
+	NULL,
+	NULL,
+	NULL,
+	NULL,
 };
 
 qboolean VGui_IsActive( void )
@@ -212,6 +220,10 @@ void VGui_FillAPIFromRef( vguiapi_t *to, const ref_interface_t *from )
 	to->DrawQuad = from->VGUI_DrawQuad;
 	to->GetTextureSizes = from->VGUI_GetTextureSizes;
 	to->GenerateTexture = from->VGUI_GenerateTexture;
+	to->SetupDrawingTextAdditive = from->VGUI_SetupDrawingTextAdditive;
+	to->UploadTextureFile = from->VGUI_UploadTextureFile;
+	to->UploadTextureBGRA = from->VGUI_UploadTextureBGRA;
+	to->UploadTextureBlockBGRA = from->VGUI_UploadTextureBlockBGRA;
 }
 
 /*
@@ -336,7 +348,11 @@ void VGui_Startup( const char *clientlib, int width, int height )
 	}
 }
 
-
+void VGui_PostClientInit( void )
+{
+	if ( vgui.PostClientInit )
+		vgui.PostClientInit();
+}
 
 /*
 ================
@@ -490,39 +506,61 @@ enum VGUI_KeyCode VGUI_MapKey( int keyCode )
 	}
 }
 
-void VGui_KeyEvent( int key, int down )
+qboolean VGui_KeyEvent( int key, int down )
 {
 	if( !vgui.initialized )
 		return;
 
+	int needMouse = 1;
+	if (vgui.NeedMouse)
+		needMouse = vgui.NeedMouse() ? 2 : 0;
+
 	switch( key )
 	{
 	case K_MOUSE1:
+		if ( !needMouse )
+			break;
 		if( down && host.mouse_visible )
 			Key_EnableTextInput( true, false );
 		vgui.Mouse( down ? MA_PRESSED : MA_RELEASED, MOUSE_LEFT );
-		return;
+		return needMouse == 2;
 	case K_MOUSE2:
+		if ( !needMouse )
+			break;
 		vgui.Mouse( down ? MA_PRESSED : MA_RELEASED, MOUSE_RIGHT );
-		return;
+		return needMouse == 2;
 	case K_MOUSE3:
+		if ( !needMouse )
+			break;
 		vgui.Mouse( down ? MA_PRESSED : MA_RELEASED, MOUSE_MIDDLE );
-		return;
+		return needMouse == 2;
 	case K_MWHEELDOWN:
+		if ( !needMouse )
+			break;
 		vgui.Mouse( MA_WHEEL, 1 );
-		return;
+		return needMouse == 2;
 	case K_MWHEELUP:
+		if ( !needMouse )
+			break;
 		vgui.Mouse( MA_WHEEL, -1 );
-		return;
+		return needMouse == 2;
 	default:
 		break;
 	}
+
+	int needKeyboard = 1;
+	if (vgui.NeedKeyboard)
+		needKeyboard = vgui.NeedKeyboard() ? 2 : 0;
+
+	if ( !needKeyboard )
+		return false;
 
 	if( down == 2 )
 		vgui.Key( KA_TYPED, VGUI_MapKey( key ) );
 	else
 		vgui.Key( down?KA_PRESSED:KA_RELEASED, VGUI_MapKey( key ) );
 	//Msg("VGui_KeyEvent %d %d %d\n", key, VGUI_MapKey( key ), down );
+	return needKeyboard == 2;
 }
 
 void VGui_MouseMove( int x, int y )
@@ -550,4 +588,12 @@ void *GAME_EXPORT VGui_GetPanel( void )
 	if( vgui.initialized )
 		return vgui.GetPanel();
 	return NULL;
+}
+
+int VGui_DrawCharacter(int x, int y, int ch, int r, int g, int b, unsigned int font, qboolean additive)
+{
+	if ( vgui.DrawCharacter )
+		return vgui.DrawCharacter( x, y, ch, r, g, b, font, additive );
+
+	return 0;
 }

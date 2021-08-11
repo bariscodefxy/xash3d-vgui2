@@ -709,9 +709,6 @@ void GAME_EXPORT Key_Event( int key, int down )
 		keys[key].repeats = 0;
 	}
 
-	VGui_KeyEvent( key, down );
-	Touch_KeyEvent( key, down );
-
 	// console key is hardcoded, so the user can never unbind it
 	if( key == '`' || key == '~' )
 	{
@@ -755,6 +752,11 @@ void GAME_EXPORT Key_Event( int key, int down )
 		default:	return;
 		}
 	}
+
+	if ( cls.key_dest == key_game && VGui_KeyEvent( key, down ) )
+		return; // handled by VGUI
+	
+	Touch_KeyEvent( key, down );
 
 	if( cls.key_dest == key_menu )
 	{

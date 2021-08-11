@@ -26,13 +26,15 @@ extern "C" {
 // vgui_draw.c
 //
 void VGui_Startup( const char *clientlib, int width, int height );
+void VGui_PostClientInit( void );
 void VGui_Shutdown( void );
 void VGui_Paint( void );
 void VGui_RunFrame( void );
-void VGui_KeyEvent( int key, int down );
+qboolean VGui_KeyEvent( int key, int down );
 void VGui_MouseMove( int x, int y );
 qboolean VGui_IsActive( void );
 void *VGui_GetPanel( void );
+int VGui_DrawCharacter( int x, int y, int ch, int r, int g, int b, unsigned int font, qboolean additive );
 #ifdef __cplusplus
 }
 #endif

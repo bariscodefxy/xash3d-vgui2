@@ -27,6 +27,10 @@ from your version.
 
 #include "vgui_main.h"
 
+void VGui2_Key(VGUI_KeyAction action, VGUI_KeyCode code);
+void VGui2_Mouse(VGUI_MouseAction action, int code);
+void VGui2_MouseMove(int x, int y);
+
 namespace vgui_support {
 void VGUI_Key(VGUI_KeyAction action, VGUI_KeyCode code)
 {
@@ -45,6 +49,7 @@ void VGUI_Key(VGUI_KeyAction action, VGUI_KeyCode code)
 			pApp->internalKeyTyped( (KeyCode) code, surface );
 			break;
 	}
+	VGui2_Key(action, code);
 	//fprintf(stdout,"vgui_support: VGUI key action %d %d\n", action, code);
 	//fflush(stdout);
 }
@@ -70,6 +75,7 @@ void VGUI_Mouse(VGUI_MouseAction action, int code)
 			pApp->internalMouseWheeled( code, surface );
 			break;
 	}
+	VGui2_Mouse(action, code);
 	//fprintf(stdout, "vgui_support: VGUI mouse action %d %d\n", action, code);	
 	//fflush(stdout);
 }
@@ -82,5 +88,6 @@ void VGUI_MouseMove(int x, int y)
 	if(!surface)
 		return;
 	pApp->internalCursorMoved( x, y, surface );
+	VGui2_MouseMove(x, y);
 }
 }

@@ -45,6 +45,8 @@ from your version.
 #include<VGUI_MouseCode.h>
 #include<VGUI_KeyCode.h>
 
+#include"vgui2/IEngineSurface.h"
+
 namespace vgui_support
 {
 extern vguiapi_t *g_api;
@@ -62,7 +64,7 @@ struct PaintStack
 	int	iScissorBottom;
 };
 
-class CEngineSurface : public SurfaceBase
+class CEngineSurface : public SurfaceBase, public IEngineSurface
 {
 private:
 
@@ -90,7 +92,7 @@ public:
 	virtual void GetMousePos(int &x, int &y) {
 		g_api->GetCursorPos(&x, &y);
 	}
-	void drawPrintChar(int x, int y, int wide, int tall, float s0, float t0, float s1, float t1, int color[]);
+	void drawPrintChar(int x, int y, int wide, int tall, float s0, float t0, float s1, float t1, int color[], bool additive);
 protected:
 	virtual int createNewTextureID( void );
 	virtual void drawSetColor( int r, int g, int b, int a );
@@ -115,11 +117,47 @@ protected:
 	virtual void setAsTopMost( bool state ) { }
 	virtual void applyChanges( void ) { }
 	virtual void swapBuffers( void ) { }
+
+public:
+	// IEngineSurface methods
+	virtual void PushMakeCurrent(int insets[4], int absExtents[4], int clipRect[4]);
+	virtual void PopMakeCurrent();
+	virtual void DrawSetColor(int r, int g, int b, int a);
+	virtual void DrawFilledRect(int x0, int y0, int x1, int y1);
+	virtual void DrawOutlinedRect(int x0, int y0, int x1, int y1);
+	virtual void DrawSetTextFont(int font);
+	virtual void DrawSetTextColor(int r, int g, int b, int a);
+	virtual void DrawGetTextColor(int &r, int &g, int &b, int &a);
+	virtual void DrawSetTextPos(int x, int y);
+	virtual void DrawGetTextPos(int &x, int &y);
+	virtual void DrawPrintText(const wchar_t *text, int textLen);
+	virtual void DrawUnicodeChar(wchar_t wch, bool additive);
+	virtual void DrawSetTextureFile(int id, const char *filename);
+	virtual void DrawSetTextureRGBA(int id, const unsigned char *rgba, int wide, int tall);
+	virtual void DrawSetTexture(int id);
+	virtual void DrawGetTextureSize(int id, int &wide, int &tall);
+	virtual void DrawTexturedRect(int x0, int y0, int x1, int y1);
+	virtual int CreateNewTextureID();
+    virtual bool DeleteTextureByID(int id);
+    virtual void DrawUpdateRegionTextureBGRA(int nTextureID, int x, int y, const unsigned char *pchData, int wide, int tall);
+    virtual void DrawSetTextureBGRA(int id, const unsigned char *bgra, int wide, int tall);
+    virtual int CreateFont();
+    virtual bool AddGlyphSetToFont(int font, const char *fontName, int tall, int weight, int flags);
+    virtual bool AddCustomFontFile(const char *fontFileName);
+	virtual int GetFontTall(int font);
+    virtual void GetCharABCwide(int font, int ch, int &a, int &b, int &c);
+    virtual int GetCharacterWidth(int font, int ch);
+    virtual void GetTextSize(int font, const wchar_t *text, int &wide, int &tall);
+	virtual void GetScreenSize(int &wide, int &tall);
+	virtual void SetCursor(int cursor);
+	virtual int GetCursor();
+	virtual void GetCursorPos(int &x, int &y);
+
 protected:
-	Cursor* _hCurrentCursor;
 	int _drawTextPos[2];
 	int _drawColor[4];
 	int _drawTextColor[4];
+	int _currentTexture;
 	friend class App;
 	friend class Panel;
 };

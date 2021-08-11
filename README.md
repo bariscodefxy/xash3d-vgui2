@@ -1,3 +1,42 @@
+# VGUI2 support for Xash3D FWGS
+
+Run original Counter-Strike 1.6 `client.dll` with Xash3D FWGS.
+
+## Installation & Running
+
+0) Compile Xash3D FWGS binary from source code.
+1) Copy engine binaries to some directory.
+2) Copy `valve` directory from [Half-Life](https://store.steampowered.com/app/70/HalfLife/) to directory with engine binaries.
+3) Copy `cstrike` directory from [Counter-Strike](https://store.steampowered.com/app/10/CounterStrike/) to directory with engine binaries.
+4) Copy these files from Half-Life directory to directory with engine binaries:
+
+```
+chromehtml.dll
+icudt.dll
+libcef.dll
+steam_api.dll
+tier0.dll
+vgui.dll
+vgui2.dll
+vstdlib.dll
+```
+
+5) Copy `filesystem_stdio.dll` from Half-Life directory to `cstrike` folder inside directory with engine binaries.
+6) Create `steam_appid.txt` in directory with engine binaries. Edit it, type `10` and save.
+7) Run `xash3d.exe -game cstrike` to start the game.
+
+## Issues
+
+Currently you must own Counter-Strike and have Steam running in order to play.
+
+You must type `m_rawinput 0` in console or you will have mouse problem.
+
+Mouse will be visible when you open scoreboard.
+
+Multiplayer advanced option does not load and save correct value (I think it's mainui's problem).
+
+You cannot run other mods than Counter-Strike with this fork.
+
 # Xash3D FWGS Engine
 [![GitHub Actions Status](https://github.com/FWGS/xash3d-fwgs/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/FWGS/xash3d-fwgs/actions/workflows/c-cpp.yml) [![Travis CI Status](https://api.travis-ci.org/FWGS/xash3d-fwgs.svg?branch=master)](https://travis-ci.org/FWGS/xash3d-fwgs) [![FreeBSD Build Status](https://img.shields.io/cirrus/github/FWGS/xash3d-fwgs?label=freebsd%20build)](https://cirrus-ci.com/github/FWGS/xash3d-fwgs) [![Discord Server](https://img.shields.io/discord/355697768582610945.svg)](http://discord.fwgs.ru/) \
 [![Download Stable](https://img.shields.io/badge/download-stable-yellow)](https://github.com/FWGS/xash3d-fwgs/releases/latest) [![Download Testing](https://img.shields.io/badge/downloads-testing-orange)](https://github.com/FWGS/xash3d-fwgs/releases/tag/continuous) 
