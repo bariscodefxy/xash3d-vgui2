@@ -158,6 +158,11 @@ int GAME_EXPORT VGUI_UtfProcessChar( int in )
 		return in;
 }
 
+enum VGUI_KeyCode VGUI_KeyForBind( const char *binding )
+{
+	return VGUI_MapKey( Key_GetKey( binding ) );
+}
+
 vguiapi_t vgui =
 {
 	false, // Not initialized yet
@@ -190,6 +195,7 @@ vguiapi_t vgui =
 	NULL,
 	NULL,
 	NULL,
+	VGUI_KeyForBind,
 	NULL, // VGUI_SetupDrawingTextAdditive
 	NULL, // VGUI_UploadTextureFile
 	NULL, // VGUI_UploadTextureBGRA
@@ -590,7 +596,7 @@ void *GAME_EXPORT VGui_GetPanel( void )
 	return NULL;
 }
 
-int VGui_DrawCharacter(int x, int y, int ch, int r, int g, int b, unsigned int font, qboolean additive)
+int VGui_DrawCharacter( int x, int y, int ch, int r, int g, int b, unsigned int font, qboolean additive )
 {
 	if ( vgui.DrawCharacter )
 		return vgui.DrawCharacter( x, y, ch, r, g, b, font, additive );

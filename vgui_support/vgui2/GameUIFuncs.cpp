@@ -1,4 +1,10 @@
 #include "IGameUIFuncs.h"
+#include <vgui_api.h>
+
+namespace vgui_support
+{
+extern vguiapi_t *g_api;
+};
 
 class GameUIFuncs : public IGameUIFuncs
 {
@@ -34,7 +40,7 @@ const char *GameUIFuncs::Key_BindingForKey(int keynum)
 
 vgui2::KeyCode GameUIFuncs::GetVGUI2KeyCodeForBind(const char *bind)
 {
-    return vgui2::KEY_TAB;
+    return (vgui2::KeyCode)(vgui_support::g_api->KeyForBind(bind) + 1);
 }
 
 void GameUIFuncs::GetVideoModes(vmode_t **liststart, int *count)
