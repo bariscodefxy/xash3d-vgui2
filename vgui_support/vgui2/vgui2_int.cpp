@@ -13,7 +13,7 @@ void VGui2_Startup()
     if (baseUI != nullptr)
         return;
 
-    fileSystemModule = Sys_LoadModule("cstrike/filesystem_stdio.dll");    
+    fileSystemModule = Sys_LoadModule("filesystem_stdio.dll");    
     CreateInterfaceFn factories[2];
     factories[0] = Sys_GetFactoryThis();
     factories[1] = Sys_GetFactory(fileSystemModule);
