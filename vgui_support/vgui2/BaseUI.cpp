@@ -5,7 +5,8 @@
 #include "IEngineSurface.h"
 #include "Cursor.h"
 #include "IChromeHTMLWrapper.h"
-#include <utlvector.h>
+
+#include <VGUI_Dar.h>
 
 #include <string.h>
 
@@ -144,7 +145,7 @@ private:
     IEngineSurface *engineSurface;
     IHTMLChromeController *chromeController;
     int surfaceBounds[4];
-    CUtlVector<vgui2::VPANEL> popups;
+    vgui::Dar<vgui2::VPANEL> popups;
     bool allowJavaScript;
     bool needKB;
     bool needMouse;
@@ -427,8 +428,8 @@ void BaseUISurface::CreatePopup(vgui2::VPANEL panel, bool minimised, bool showTa
     vgui2::ipanel()->SetKeyBoardInputEnabled(panel, kbInput);
     vgui2::ipanel()->SetMouseInputEnabled(panel, mouseInput);
 
-    if (!popups.HasElement(panel))
-        popups.AddToTail(panel);
+    if (!popups.hasElement(panel))
+        popups.addElement(panel);
 }
 
 void BaseUISurface::SwapBuffers(vgui2::VPANEL panel)
@@ -504,8 +505,8 @@ void BaseUISurface::SetTranslateExtendedKeys(bool state)
 
 vgui2::VPANEL BaseUISurface::GetTopmostPopup()
 {
-    if (!popups.IsEmpty())
-        return popups[popups.Count() - 1];
+    if (popups.getCount() > 0)
+        return popups[popups.getCount() - 1];
     
     return NULL;
 }
@@ -576,12 +577,12 @@ void BaseUISurface::PlaySound(const char *fileName)
 
 int BaseUISurface::GetPopupCount()
 {
-    return popups.Count();
+    return popups.getCount();
 }
 
 vgui2::VPANEL BaseUISurface::GetPopup(int index)
 {
-    if (popups.IsValidIndex(index))
+    if (0 <= index && index < popups.getCount())
         return popups[index];
     
     return NULL;
@@ -595,7 +596,7 @@ bool BaseUISurface::ShouldPaintChildPanel(vgui2::VPANEL panel)
     if (!vgui2::ipanel()->IsPopup(panel))
         return true;
 
-    if (popups.HasElement(panel))
+    if (popups.hasElement(panel))
         vgui2::ipanel()->Render_SetPopupVisible(panel, true);
 
     return false;
@@ -616,7 +617,7 @@ void BaseUISurface::AddPanel(vgui2::VPANEL panel)
 
 void BaseUISurface::ReleasePanel(vgui2::VPANEL panel)
 {
-    popups.FindAndRemove(panel);
+    popups.removeElement(panel);
 
     if (restrictedPanel == panel)
         restrictedPanel = NULL;    
@@ -624,14 +625,14 @@ void BaseUISurface::ReleasePanel(vgui2::VPANEL panel)
 
 void BaseUISurface::MovePopupToFront(vgui2::VPANEL panel)
 {
-    popups.FindAndRemove(panel);
-    popups.AddToTail(panel);
+    popups.removeElement(panel);
+    popups.addElement(panel);
 }
 
 void BaseUISurface::MovePopupToBack(vgui2::VPANEL panel)
 {
-    popups.FindAndRemove(panel);
-    popups.AddToHead(panel);
+    popups.removeElement(panel);
+    popups.insertElementAt(panel, 0);
 }
 
 void BaseUISurface::SolveTraverse(vgui2::VPANEL panel, bool forceApplySchemeSettings)
@@ -655,12 +656,12 @@ void BaseUISurface::PaintTraverse(vgui2::VPANEL panel)
     if (restrictedPanel)
         panel = restrictedPanel;
 
-    FOR_EACH_VEC(popups, i)
+    for (int i = 0; i < popups.getCount(); ++i)
         vgui2::ipanel()->Render_SetPopupVisible(popups[i], false);
 
     vgui2::ipanel()->PaintTraverse(panel, true, true);
 
-    FOR_EACH_VEC(popups, i)
+    for (int i = 0; i < popups.getCount(); ++i)
     {
         if (vgui2::ipanel()->Render_GetPopupVisible(popups[i]))
             vgui2::ipanel()->PaintTraverse(popups[i], true, true);
@@ -701,7 +702,7 @@ void BaseUISurface::CalculateMouseVisible()
     needMouse = false;
     needKB = false;
 
-    FOR_EACH_VEC(popups, i)
+    for (int i = 0; i < popups.getCount(); ++i)
     {
         bool visible = vgui2::ipanel()->IsVisible(popups[i]);
         vgui2::VPANEL parent = vgui2::ipanel()->GetParent(popups[i]);
