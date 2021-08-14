@@ -601,5 +601,5 @@ int VGui_DrawCharacter( int x, int y, int ch, int r, int g, int b, unsigned int 
 	if ( vgui.DrawCharacter )
 		return vgui.DrawCharacter( x, y, ch, r, g, b, font, additive );
 
-	return 0;
+	return -1;
 }

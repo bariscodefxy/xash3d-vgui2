@@ -2880,7 +2880,15 @@ static int GAME_EXPORT pfnVGUI2DrawCharacter( int x, int y, int number, unsigned
 	if( !hud_utf8->value )
 		number = Con_UtfProcessChar( number );
 
-	return VGui_DrawCharacter( x, y, number, clgame.ds.textColor[0], clgame.ds.textColor[1], clgame.ds.textColor[2], font, false );
+	int r = clgame.ds.textColor[0];
+	int g = clgame.ds.textColor[1];
+	int b = clgame.ds.textColor[2];
+
+	int width = VGui_DrawCharacter( x, y, number, r, g, b, font, false );;
+	if ( width == -1 )
+		width = pfnDrawCharacter( x, y, number, r, g, b );
+	
+	return width;
 }
 
 /*
@@ -2894,7 +2902,11 @@ static int GAME_EXPORT pfnVGUI2DrawCharacterAdditive( int x, int y, int ch, int 
 	if( !hud_utf8->value )
 		ch = Con_UtfProcessChar( ch );
 
-	return VGui_DrawCharacter( x, y, ch, r, g, b, font, true );
+	int width = VGui_DrawCharacter( x, y, ch, r, g, b, font, true );
+	if ( width == -1 )
+		width = pfnDrawCharacter( x, y, ch, r, g, b );
+	
+	return width;
 }
 
 /*
@@ -2911,7 +2923,7 @@ static int GAME_EXPORT pfnDrawString( int x, int y, const char *str, int r, int 
 	int width = 0;
 	for ( ; *str != 0 && *str != '\n'; str++ )
 	{
-		width += pfnVGUI2DrawCharacterAdditive( x + width, y, (unsigned char)*str, r, g, b, 0 );
+		width += pfnDrawCharacter( x + width, y, (unsigned char)*str, r, g, b );
 	}
 
 	return width;
