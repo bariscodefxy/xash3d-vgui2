@@ -160,6 +160,7 @@ int GAME_EXPORT VGUI_UtfProcessChar( int in )
 
 enum VGUI_KeyCode VGUI_KeyForBind( const char *binding )
 {
+	enum VGUI_KeyCode VGUI_MapKey( int keyCode );
 	return VGUI_MapKey( Key_GetKey( binding ) );
 }
 
