@@ -28,7 +28,7 @@ from your version.
 
 #include "vgui2/IEngineSurface.h"
 
-void VGui2_Startup();
+void VGui2_Startup(const char *clientlib);
 void VGui2_PostClientInit(IEngineSurface *engineSurface);
 void VGui2_Shutdown();
 void VGui2_Paint();
@@ -44,8 +44,10 @@ Panel	*rootpanel = NULL;
 CEngineSurface	*surface = NULL;
 CEngineApp          staticApp;
 
-void VGui_Startup( int width, int height )
+void VGui_Startup( const char *clientlib, int width, int height )
 {
+	VGui2_Startup(clientlib);
+
 	if( rootpanel )
 	{
 		rootpanel->setSize( width, height );
@@ -70,8 +72,6 @@ void VGui_Startup( int width, int height )
 	//ASSERT( rootpanel->getSurfaceBase() != NULL );
 
 	g_api->DrawInit ();
-
-	VGui2_Startup();
 }
 
 void VGui_Shutdown( void )

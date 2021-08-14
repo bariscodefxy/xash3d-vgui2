@@ -576,8 +576,6 @@ void Panel::SetFgColor(Color _fgColor)
 
 void Panel::ApplySchemeSettings(IScheme *pScheme)
 {
-    SetFgColor(GetSchemeColor("FgColor", pScheme));
-    SetBgColor(GetSchemeColor("BgColor", pScheme));
     needsSchemeUpdate = false;
 }
 

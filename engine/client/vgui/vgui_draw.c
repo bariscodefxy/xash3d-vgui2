@@ -346,7 +346,7 @@ void VGui_Startup( const char *clientlib, int width, int height )
 	if( vgui.initialized )
 	{
 		//host.mouse_visible = true;
-		vgui.Startup( width, height );
+		vgui.Startup( clientlib, width, height );
 	}
 	else if ( COM_CheckString( clientlib ) )
 	{

@@ -178,7 +178,6 @@ private:
     int numFactories;
     CSysModule *vgui2Module;
     CSysModule *chromeModule;
-    CSysModule *clientModule;
 };
 
 static RootPanel *rootPanel;
@@ -907,15 +906,18 @@ void BaseUI::Initialize(CreateInterfaceFn *factories, int count)
 
     vgui2Module = Sys_LoadModule("vgui2.dll");
     chromeModule = Sys_LoadModule("chromehtml.dll");
-    clientModule = Sys_LoadModule("cstrike/cl_dlls/client.dll");
 
     factoryList[numFactories++] = factories[0];
     factoryList[numFactories++] = Sys_GetFactory(vgui2Module);
     factoryList[numFactories++] = factories[1];
     factoryList[numFactories++] = Sys_GetFactory(chromeModule);
-    factoryList[numFactories++] = Sys_GetFactory(clientModule);
 
-    clientVGUI = (IClientVGUI *)factoryList[4](VCLIENTVGUI_INTERFACE_VERSION, nullptr);
+    if (factories[2] != nullptr)
+    {
+        factoryList[numFactories++] = factories[2];
+        clientVGUI = (IClientVGUI *)factoryList[4](VCLIENTVGUI_INTERFACE_VERSION, nullptr);
+    }
+
     vgui2::InitializeVGui2Interfaces("BaseUI", factoryList, numFactories);
     baseUISurface = (BaseUISurface *)vgui2::surface();
 
@@ -975,13 +977,14 @@ void BaseUI::Shutdown()
     vgui2::ivgui()->Shutdown();
 
     if (clientVGUI)
+    {
         clientVGUI->Shutdown();
+        clientVGUI = nullptr;
+    }
 
     vgui2::system()->SaveUserConfigFile();
     vgui2::surface()->Shutdown();
 
-	Sys_UnloadModule(clientModule);
-	clientModule = nullptr;
 	Sys_UnloadModule(chromeModule);
 	chromeModule = nullptr;
 	Sys_UnloadModule(vgui2Module);

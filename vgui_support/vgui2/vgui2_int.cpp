@@ -8,17 +8,29 @@ static CSysModule *fileSystemModule;
 static IFileSystem *fileSystem;
 static IBaseUI *baseUI;
 
-void VGui2_Startup()
+void VGui2_Startup(const char *clientlib)
 {
     if (baseUI != nullptr)
         return;
 
-    fileSystemModule = Sys_LoadModule("filesystem_stdio.dll");    
-    CreateInterfaceFn factories[2];
+    if (clientlib == nullptr)
+        return;
+
+    fileSystemModule = Sys_LoadModule("filesystem_stdio.dll");
+    auto fileSystemFactory = Sys_GetFactory(fileSystemModule);
+    fileSystem = (IFileSystem *)fileSystemFactory(FILESYSTEM_INTERFACE_VERSION, nullptr);
+
+    char szClientLib[MAX_OSPATH];
+    fileSystem->GetLocalPath(clientlib, szClientLib, sizeof(szClientLib));
+    CSysModule *clientModule = Sys_LoadModule(szClientLib);
+
+    CreateInterfaceFn factories[3];
     factories[0] = Sys_GetFactoryThis();
-    factories[1] = Sys_GetFactory(fileSystemModule);
+    factories[1] = fileSystemFactory;
+    factories[2] = Sys_GetFactory(clientModule);
+
     baseUI = (IBaseUI *)factories[0](BASEUI_INTERFACE_VERSION, nullptr);
-    baseUI->Initialize(factories, 2);
+    baseUI->Initialize(factories, 3);
 }
 
 void VGui2_PostClientInit(IEngineSurface *engineSurface)
@@ -35,6 +47,7 @@ void VGui2_Shutdown()
     baseUI = nullptr;
     Sys_UnloadModule(fileSystemModule);
     fileSystemModule = nullptr;
+    fileSystem = nullptr;
 }
 
 void VGui2_Paint()
