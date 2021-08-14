@@ -512,61 +512,39 @@ enum VGUI_KeyCode VGUI_MapKey( int keyCode )
 	}
 }
 
-qboolean VGui_KeyEvent( int key, int down )
+void VGui_KeyEvent( int key, int down )
 {
 	if( !vgui.initialized )
 		return;
 
-	int needMouse = 1;
-	if (vgui.NeedMouse)
-		needMouse = vgui.NeedMouse() ? 2 : 0;
-
 	switch( key )
 	{
 	case K_MOUSE1:
-		if ( !needMouse )
-			break;
 		if( down && host.mouse_visible )
 			Key_EnableTextInput( true, false );
 		vgui.Mouse( down ? MA_PRESSED : MA_RELEASED, MOUSE_LEFT );
-		return needMouse == 2;
+		return;
 	case K_MOUSE2:
-		if ( !needMouse )
-			break;
 		vgui.Mouse( down ? MA_PRESSED : MA_RELEASED, MOUSE_RIGHT );
-		return needMouse == 2;
+		return;
 	case K_MOUSE3:
-		if ( !needMouse )
-			break;
 		vgui.Mouse( down ? MA_PRESSED : MA_RELEASED, MOUSE_MIDDLE );
-		return needMouse == 2;
+		return;
 	case K_MWHEELDOWN:
-		if ( !needMouse )
-			break;
 		vgui.Mouse( MA_WHEEL, 1 );
-		return needMouse == 2;
+		return;
 	case K_MWHEELUP:
-		if ( !needMouse )
-			break;
 		vgui.Mouse( MA_WHEEL, -1 );
-		return needMouse == 2;
+		return;
 	default:
 		break;
 	}
-
-	int needKeyboard = 1;
-	if (vgui.NeedKeyboard)
-		needKeyboard = vgui.NeedKeyboard() ? 2 : 0;
-
-	if ( !needKeyboard )
-		return false;
 
 	if( down == 2 )
 		vgui.Key( KA_TYPED, VGUI_MapKey( key ) );
 	else
 		vgui.Key( down?KA_PRESSED:KA_RELEASED, VGUI_MapKey( key ) );
 	//Msg("VGui_KeyEvent %d %d %d\n", key, VGUI_MapKey( key ), down );
-	return needKeyboard == 2;
 }
 
 void VGui_MouseMove( int x, int y )

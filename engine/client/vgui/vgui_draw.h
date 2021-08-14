@@ -30,7 +30,7 @@ void VGui_PostClientInit( void );
 void VGui_Shutdown( void );
 void VGui_Paint( void );
 void VGui_RunFrame( void );
-qboolean VGui_KeyEvent( int key, int down );
+void VGui_KeyEvent( int key, int down );
 void VGui_MouseMove( int x, int y );
 qboolean VGui_IsActive( void );
 void *VGui_GetPanel( void );
