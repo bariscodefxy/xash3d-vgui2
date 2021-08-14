@@ -76,13 +76,6 @@ XASH SPECIFIC			- sort of hack that works only in Xash3D not in GoldSrc
 
 #define HACKS_RELATED_HLMODS		// some HL-mods works differently under Xash and can't be fixed without some hacks at least at current time
 
-typedef struct
-{
-	int	numfilenames;
-	char	**filenames;
-	char	*filenamesbuffer;
-} search_t;
-
 enum
 {
 	DEV_NONE = 0,
@@ -118,6 +111,7 @@ typedef enum
 #include "cvar.h"
 #include "con_nprint.h"
 #include "crclib.h"
+#include "fs_int.h"
 
 #define XASH_VERSION        "0.20" // engine current version
 #define XASH_COMPAT_VERSION "0.99" // version we are based on
@@ -149,15 +143,6 @@ typedef enum
 #define MAX_DECALS		256	// touching TE_DECAL messages, etc
 #define MAX_STATIC_ENTITIES	32	// static entities that moved on the client when level is spawn
 #endif
-
-// filesystem flags
-#define FS_STATIC_PATH  ( 1U << 0 )  // FS_ClearSearchPath will be ignore this path
-#define FS_NOWRITE_PATH ( 1U << 1 )  // default behavior - last added gamedir set as writedir. This flag disables it
-#define FS_GAMEDIR_PATH ( 1U << 2 )  // just a marker for gamedir path
-#define FS_CUSTOM_PATH  ( 1U << 3 )  // custom directory
-#define FS_GAMERODIR_PATH	( 1U << 4 ) // caseinsensitive
-
-#define FS_GAMEDIRONLY_SEARCH_FLAGS ( FS_GAMEDIR_PATH | FS_CUSTOM_PATH | FS_GAMERODIR_PATH )
 
 #define GI		SI.GameInfo
 #define FS_Gamedir()	SI.GameInfo->gamefolder

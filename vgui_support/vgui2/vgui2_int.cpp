@@ -17,16 +17,6 @@ void VGui2_Startup()
     CreateInterfaceFn factories[2];
     factories[0] = Sys_GetFactoryThis();
     factories[1] = Sys_GetFactory(fileSystemModule);
-
-    fileSystem = (IFileSystem *)factories[1](FILESYSTEM_INTERFACE_VERSION, nullptr);
-    fileSystem->Mount();
-    fileSystem->AddSearchPath(".", "ROOT");
-    fileSystem->AddSearchPath(".", "BASE");
-	fileSystem->AddSearchPath("platform", "PLATFORM");
-	fileSystem->AddSearchPath("cstrike", "GAME");
-	fileSystem->AddSearchPath("cstrike", "GAMECONFIG");
-	fileSystem->AddSearchPath("valve", "GAME_FALLBACK");
-
     baseUI = (IBaseUI *)factories[0](BASEUI_INTERFACE_VERSION, nullptr);
     baseUI->Initialize(factories, 2);
 }
@@ -43,8 +33,6 @@ void VGui2_Shutdown()
 
     baseUI->Shutdown();
     baseUI = nullptr;
-    fileSystem->Unmount();
-    fileSystem = nullptr;
     Sys_UnloadModule(fileSystemModule);
     fileSystemModule = nullptr;
 }

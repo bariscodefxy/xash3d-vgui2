@@ -4119,3 +4119,29 @@ static byte *W_LoadFile( const char *path, fs_offset_t *lumpsizeptr, qboolean ga
 		return W_ReadLump( search->wad, &search->wad->lumps[index], lumpsizeptr );
 	return NULL;
 }
+
+int EXPORT FS_GetAPI( fs_api_t *g_api )
+{
+	g_api->FS_AddGameDirectory = FS_AddGameDirectory;
+	g_api->FS_Delete = FS_Delete;
+	g_api->FS_CreatePath = FS_CreatePath;
+	g_api->FS_FileExists = FS_FileExists;
+	g_api->FS_Open = FS_Open;
+	g_api->FS_Close = FS_Close;
+	g_api->FS_Seek = FS_Seek;
+	g_api->FS_Tell = FS_Tell;
+	g_api->FS_FileSize = FS_FileSize;
+	g_api->FS_FileTime = FS_FileTime;
+	g_api->FS_Eof = FS_Eof;
+	g_api->FS_Read = FS_Read;
+	g_api->FS_Write = FS_Write;
+	g_api->FS_Getc = FS_Getc;
+	g_api->FS_VPrintf = FS_VPrintf;
+	g_api->FS_Search = FS_Search;
+	g_api->FS_GetDiskPath = FS_GetDiskPath;
+	g_api->Msg = Con_Printf;
+	g_api->_Mem_Alloc = _Mem_Alloc;
+	g_api->_Mem_Free = _Mem_Free;
+
+	return 0;
+}
