@@ -1,6 +1,8 @@
 #ifndef KEYVALUES_H
 #define KEYVALUES_H
 
+#include <stddef.h>
+
 class IFileSystem;
 
 class KeyValues

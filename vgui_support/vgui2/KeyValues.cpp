@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <wchar.h>
 
 #ifndef ARRAYSIZE
 #define ARRAYSIZE(x) (sizeof(x) / sizeof(*(x)))
@@ -245,7 +246,7 @@ int KeyValues::GetInt(const char *keyName, int defaultValue)
     case TYPE_STRING:
         return atoi(dat->m_sValue);
     case TYPE_WSTRING:
-        return _wtoi((wchar_t *)dat->m_sValue);
+        return wcstol((wchar_t *)dat->m_sValue, NULL, 10);
     case TYPE_FLOAT:
         return (int)dat->m_flValue;
     case TYPE_UINT64:

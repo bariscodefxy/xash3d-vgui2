@@ -136,9 +136,6 @@ public:
     void InternalSolveTraverse(vgui2::VPANEL panel);
 
 private:
-    static constexpr auto VPANEL_NORMAL = ((vgui2::SurfacePlat *)NULL);
-    static constexpr auto VPANEL_MINIMIZED = ((vgui2::SurfacePlat *)0x00000001);
-
     vgui2::VPANEL embeddedPanel;
     vgui2::VPANEL restrictedPanel;
     char language[32];
@@ -180,6 +177,9 @@ private:
     CSysModule *vgui2Module;
     CSysModule *chromeModule;
 };
+
+static const auto VPANEL_NORMAL = ((vgui2::SurfacePlat *)NULL);
+static const auto VPANEL_MINIMIZED = ((vgui2::SurfacePlat *)0x00000001);
 
 static RootPanel *rootPanel;
 static IClientVGUI *clientVGUI;

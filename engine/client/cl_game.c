@@ -2877,14 +2877,16 @@ pfnVGUI2DrawCharacter
 */
 static int GAME_EXPORT pfnVGUI2DrawCharacter( int x, int y, int number, unsigned int font )
 {
+	int r, g, b, width;
+
 	if( !hud_utf8->value )
 		number = Con_UtfProcessChar( number );
 
-	int r = clgame.ds.textColor[0];
-	int g = clgame.ds.textColor[1];
-	int b = clgame.ds.textColor[2];
+	r = clgame.ds.textColor[0];
+	g = clgame.ds.textColor[1];
+	b = clgame.ds.textColor[2];
 
-	int width = VGui_DrawCharacter( x, y, number, r, g, b, font, false );;
+	width = VGui_DrawCharacter( x, y, number, r, g, b, font, false );;
 	if ( width == -1 )
 		width = pfnDrawCharacter( x, y, number, r, g, b );
 	
@@ -2899,10 +2901,12 @@ pfnVGUI2DrawCharacterAdditive
 */
 static int GAME_EXPORT pfnVGUI2DrawCharacterAdditive( int x, int y, int ch, int r, int g, int b, unsigned int font )
 {
+	int width;
+	
 	if( !hud_utf8->value )
 		ch = Con_UtfProcessChar( ch );
 
-	int width = VGui_DrawCharacter( x, y, ch, r, g, b, font, true );
+	width = VGui_DrawCharacter( x, y, ch, r, g, b, font, true );
 	if ( width == -1 )
 		width = pfnDrawCharacter( x, y, ch, r, g, b );
 	
@@ -2917,10 +2921,11 @@ pfnDrawString
 */
 static int GAME_EXPORT pfnDrawString( int x, int y, const char *str, int r, int g, int b )
 {
+	int width = 0;
+
 	Con_UtfProcessChar(0);
 
 	// draw the string until we hit the null character or a newline character
-	int width = 0;
 	for ( ; *str != 0 && *str != '\n'; str++ )
 	{
 		width += pfnDrawCharacter( x + width, y, (unsigned char)*str, r, g, b );

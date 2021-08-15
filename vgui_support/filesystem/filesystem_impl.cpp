@@ -18,7 +18,8 @@ GNU General Public License for more details.
 #include <stdarg.h>
 #include <time.h>
 #include <fs_int.h>
-#include "filesystem.h"
+#include "FileSystem.h"
+#include <sys/stat.h>
 
 class CXashFileSystem : public IFileSystem
 {
@@ -174,14 +175,14 @@ private:
 
 #define Mem_Free( ptr ) engine._Mem_Free( (ptr), __FILE__, __LINE__ );
 
-#define STUBCALL( format, ... ) printf( "FS_Stdio_Xash: called a stub: %s  ->(" format ")\n" , __FUNCSIG__, __VA_ARGS__ );
-#define STUBCALL_VOID			printf( "FS_Stdio_Xash: called a stub: %s  ->(void)\n", __FUNCSIG__ );
+#define STUBCALL( format, ... ) //printf( "FS_Stdio_Xash: called a stub: %s  ->(" format ")\n" , __FUNCSIG__, __VA_ARGS__ );
+#define STUBCALL_VOID			//printf( "FS_Stdio_Xash: called a stub: %s  ->(void)\n", __FUNCSIG__ );
 
 #ifndef NDEBUG
-#define LOGCALL( format, ... )	printf( "FS_Stdio_Xash: called %s     ->(" format ")\n" , __FUNCSIG__, __VA_ARGS__ )
-#define LOGCALL_VOID			printf( "FS_Stdio_Xash: called %s     ->(void)\n", __FUNCSIG__ );
+#define LOGCALL( format, ... )	//printf( "FS_Stdio_Xash: called %s     ->(" format ")\n" , __FUNCSIG__, __VA_ARGS__ )
+#define LOGCALL_VOID			//printf( "FS_Stdio_Xash: called %s     ->(void)\n", __FUNCSIG__ );
 
-#define LOGRETVAL( format, ret ) printf( "FS_Stdio_Xash:             \-> " format "\n", ret );
+#define LOGRETVAL( format, ret ) //printf( "FS_Stdio_Xash:             \-> " format "\n", ret );
 #else
 #define LOGCALL( format, ... )
 #define LOGCALL_VOID
