@@ -130,7 +130,7 @@ def build_fs(bld):
 
 	source = bld.path.ant_glob(['vinterface/*.cpp', 'filesystem/*.cpp'])
 
-	includes = [ '.', 'vinterface', 'filesystem', '../common', '../engine' ]
+	includes = [ '.', 'vinterface', 'filesystem', '../common', '../engine', '../public' ]
 
 	bld.shlib(
 		source   = source,
