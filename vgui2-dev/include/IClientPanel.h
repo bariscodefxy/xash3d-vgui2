@@ -1,7 +1,7 @@
 #ifndef ICLIENTPANEL_H
 #define ICLIENTPANEL_H
 
-#include "VGUI.h"
+#include "VGUI2.h"
 
 #ifdef GetClassName
 #undef GetClassName

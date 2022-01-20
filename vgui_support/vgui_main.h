@@ -45,7 +45,7 @@ from your version.
 #include<VGUI_MouseCode.h>
 #include<VGUI_KeyCode.h>
 
-#include"vgui2/IEngineSurface.h"
+#include"IEngineSurface.h"
 
 namespace vgui_support
 {

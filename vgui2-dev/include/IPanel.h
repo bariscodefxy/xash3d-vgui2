@@ -2,7 +2,7 @@
 #define IPANEL_H
 
 #include "interface.h"
-#include "VGUI.h"
+#include "VGUI2.h"
 
 #ifdef SendMessage
 #undef SendMessage

@@ -3,7 +3,7 @@
 
 #include "interface.h"
 #include "IAppSystem.h"
-#include "VGUI.h"
+#include "VGUI2.h"
 
 class KeyValues;
 

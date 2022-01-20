@@ -2,7 +2,7 @@
 #define ISCHEME_H
 
 #include "interface.h"
-#include "VGUI.h"
+#include "VGUI2.h"
 #include "Color.h"
 
 namespace vgui2

@@ -1,7 +1,7 @@
 #ifndef IBORDER_H
 #define IBORDER_H
 
-#include "VGUI.h"
+#include "VGUI2.h"
 
 class KeyValues;
 

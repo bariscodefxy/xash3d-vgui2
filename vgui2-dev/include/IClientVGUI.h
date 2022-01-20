@@ -2,7 +2,7 @@
 #define ICLIENTVGUI_H
 
 #include "interface.h"
-#include "VGUI.h"
+#include "VGUI2.h"
 
 class IClientVGUI : public IBaseInterface
 {

@@ -2,7 +2,7 @@
 #define IINPUT_H
 
 #include "interface.h"
-#include "VGUI.h"
+#include "VGUI2.h"
 #include "KeyCode.h"
 #include "MouseCode.h"
 

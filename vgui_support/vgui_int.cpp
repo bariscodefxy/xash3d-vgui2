@@ -26,7 +26,7 @@ from your version.
 #include "vgui_main.h"
 #include "xash3d_types.h"
 
-#include "vgui2/IEngineSurface.h"
+#include "IEngineSurface.h"
 
 void VGui2_Startup(const char *clientlib);
 void VGui2_PostClientInit(IEngineSurface *engineSurface);
