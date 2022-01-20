@@ -11,7 +11,7 @@ fi
 
 # NOTE: to build with other version use --msvc_version during configuration
 # NOTE: sometimes you may need to add WinSDK to %PATH%
-./waf.bat configure -s "SDL2_VC" -T "debug" --prefix=`pwd` --enable-utils $AMD64 || die
+./waf.bat configure -s "SDL2_VC" -T "debug" --enable-utils --prefix=`pwd` $AMD64 || die
 ./waf.bat build -v || die
 ./waf.bat install || die
 
@@ -24,14 +24,8 @@ else
 	die
 fi
 
-7z a -t7z $BUILDDIR/xash3d-fwgs-win32-$ARCH.7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on *.dll *.exe *.pdb
+mkdir valve/
+python3 scripts/makepak.py xash-extras/ valve/extras.pak
 
-echo "Generating VC2008 project"
-rm -rf vc2008/
-mkdir vc2008/
-./waf.bat msdev
-cp *.sln vc2008/
-find . -name "*.vcproj" -exec cp --parents \{\} vc2008/ \;
-rm -rf vc2008/vc2008 # HACKHACK
-
-7z a -t7z $BUILDDIR/xash3d-fwgs-vc2008-sln-$ARCH.7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on -r vc2008
+mkdir -p artifacts/
+7z a -t7z artifacts/xash3d-fwgs-win32-$ARCH.7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on *.dll *.exe *.pdb valve/

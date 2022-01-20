@@ -679,7 +679,6 @@ extern convar_t	*cl_fixtimerate;
 extern convar_t	*hud_scale;
 extern convar_t	*gl_showtextures;
 extern convar_t	*cl_bmodelinterp;
-extern convar_t	*cl_righthand;
 extern convar_t	*cl_lw;		// local weapons
 extern convar_t	*cl_charset;
 extern convar_t	*cl_trace_messages;
@@ -1049,7 +1048,6 @@ void Con_Bottom( void );
 void Con_Top( void );
 void Con_PageDown( int lines );
 void Con_PageUp( int lines );
-void Con_LoadHistory( void );
 
 //
 // s_main.c

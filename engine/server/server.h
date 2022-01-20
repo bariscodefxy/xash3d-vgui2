@@ -352,6 +352,7 @@ typedef struct
 typedef struct
 {
 	qboolean		initialized;		// sv_init has completed
+	qboolean	game_library_loaded;	// is game library loaded in SV_InitGame
 	double		timestart;		// just for profiling
 
 	int		maxclients;		// server max clients
@@ -386,6 +387,8 @@ extern	areanode_t	sv_areanodes[];		// AABB dynamic tree
 
 extern convar_t		mp_logecho;
 extern convar_t		mp_logfile;
+extern convar_t		sv_log_onefile;
+extern convar_t		sv_log_singleplayer;
 extern convar_t		sv_unlag;
 extern convar_t		sv_maxunlag;
 extern convar_t		sv_unlagpush;
@@ -467,7 +470,6 @@ void SV_AddToMaster( netadr_t from, sizebuf_t *msg );
 qboolean SV_ProcessUserAgent( netadr_t from, const char *useragent );
 void Host_SetServerState( int state );
 qboolean SV_IsSimulating( void );
-qboolean SV_InitGame( void );
 void SV_FreeClients( void );
 void Master_Add( void );
 void Master_Heartbeat( void );
@@ -476,6 +478,7 @@ void Master_Packet( void );
 //
 // sv_init.c
 //
+qboolean SV_InitGame( void );
 void SV_ActivateServer( int runPhysics );
 qboolean SV_SpawnServer( const char *server, const char *startspot, qboolean background );
 model_t *SV_ModelHandle( int modelindex );
@@ -643,7 +646,8 @@ char *SV_Localinfo( void );
 void Log_Close( void );
 void Log_Open( void );
 void Log_PrintServerVars( void );
-qboolean SV_ServerLog_f( sv_client_t *cl );
+void SV_ServerLog_f( void );
+void SV_SetLogAddress_f( void );
 
 //
 // sv_save.c

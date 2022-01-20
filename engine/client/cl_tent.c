@@ -361,8 +361,8 @@ void CL_TempEntPlaySound( TEMPENTITY *pTemp, float damp )
 		sound_t	handle;
 
 		if( isshellcasing )
-			fvol *= min ( 1.0f, ((float)zvel) / 350.0f );
-		else fvol *= min ( 1.0f, ((float)zvel) / 450.0f );
+			fvol *= Q_min( 1.0f, ((float)zvel) / 350.0f );
+		else fvol *= Q_min( 1.0f, ((float)zvel) / 450.0f );
 
 		if( !COM_RandomLong( 0, 3 ) && !isshellcasing )
 			pitch = COM_RandomLong( 95, 105 );
@@ -2693,7 +2693,7 @@ apply various effects to entity origin or attachment
 void CL_AddEntityEffects( cl_entity_t *ent )
 {
 	// yellow flies effect 'monster stuck in the wall'
-	if( FBitSet( ent->curstate.effects, EF_BRIGHTFIELD ))
+	if( FBitSet( ent->curstate.effects, EF_BRIGHTFIELD ) && !RP_LOCALCLIENT( ent ))
 		R_EntityParticles( ent );
 
 	if( FBitSet( ent->curstate.effects, EF_DIMLIGHT ))

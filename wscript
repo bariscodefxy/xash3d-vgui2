@@ -20,12 +20,13 @@ class Subproject:
 	ignore    = False # if true will be ignored, set by user request
 	mandatory  = False
 
-	def __init__(self, name, dedicated=True, singlebin=False, mandatory = False, utility = False):
+	def __init__(self, name, dedicated=True, singlebin=False, mandatory = False, utility = False, fuzzer = False):
 		self.name = name
 		self.dedicated = dedicated
 		self.singlebin = singlebin
 		self.mandatory = mandatory
 		self.utility = utility
+		self.fuzzer = fuzzer
 
 	def is_enabled(self, ctx):
 		if not self.mandatory:
@@ -47,6 +48,9 @@ class Subproject:
 		if self.utility and not ctx.env.ENABLE_UTILS:
 			return False
 
+		if self.fuzzer and not ctx.env.ENABLE_FUZZER:
+			return False
+
 		return True
 
 SUBDIRS = [
@@ -60,7 +64,8 @@ SUBDIRS = [
 	Subproject('stub/client'),
 	Subproject('dllemu'),
 	Subproject('engine', dedicated=False),
-	Subproject('utils/mdldec', utility=True)
+	Subproject('utils/mdldec', utility=True),
+	Subproject('utils/run-fuzzer', fuzzer=True)
 ]
 
 def subdirs():
@@ -78,8 +83,8 @@ def options(opt):
 	grp.add_option('-8', '--64bits', action = 'store_true', dest = 'ALLOW64', default = False,
 		help = 'allow targetting 64-bit engine(Linux/Windows/OSX x86 only) [default: %default]')
 
-	grp.add_option('-W', '--win-style-install', action = 'store_true', dest = 'WIN_INSTALL', default = False,
-		help = 'install like Windows build, ignore prefix, useful for development [default: %default]')
+	grp.add_option('-P', '--enable-packaging', action = 'store_true', dest = 'PACKAGING', default = False,
+		help = 'respect prefix option, useful for packaging for various operating systems [default: %default]')
 
 	grp.add_option('--enable-bsp2', action = 'store_true', dest = 'SUPPORT_BSP2_FORMAT', default = False,
 		help = 'build engine and renderers with BSP2 map support(recommended for Quake, breaks compatibility!) [default: %default]')
@@ -90,10 +95,16 @@ def options(opt):
 	grp.add_option('--ignore-projects', action = 'store', dest = 'IGNORE_PROJECTS', default = None,
 		help = 'disable selected projects from build [default: %default]')
 
+	grp.add_option('--disable-werror', action = 'store_true', dest = 'DISABLE_WERROR', default = False,
+		help = 'disable compilation abort on warning')
+
 	grp = opt.add_option_group('Utilities options')
 
 	grp.add_option('--enable-utils', action = 'store_true', dest = 'ENABLE_UTILS', default = False,
 		help = 'enable building various development utilities [default: %default]')
+
+	grp.add_option('--enable-fuzzer', action = 'store_true', dest = 'ENABLE_FUZZER', default = False,
+		help = 'enable building libFuzzer runner [default: %default]' )
 
 	opt.load('compiler_optimizations subproject')
 
@@ -154,6 +165,8 @@ def configure(conf):
 		conf.options.NO_ASYNC_RESOLVE = True
 		conf.define('XASH_SDLMAIN', 1)
 		enforce_pic = False
+	elif conf.env.DEST_OS == 'dos':
+		conf.options.SINGLE_BINARY = True
 
 	if conf.env.STATIC_LINKING:
 		enforce_pic = False # PIC may break full static builds
@@ -179,7 +192,6 @@ def configure(conf):
 		'-Werror=vla',
 		'-Werror=tautological-compare',
 		'-Werror=duplicated-cond',
-		'-Werror=duplicated-branches', # BEWARE: buggy
 		'-Werror=bool-compare',
 		'-Werror=bool-operation',
 		'-Wcast-align',
@@ -217,7 +229,7 @@ def configure(conf):
 
 	# And here C++ flags starts to be treated separately
 	cxxflags = list(cflags)
-	if conf.env.COMPILER_CC != 'msvc':
+	if conf.env.COMPILER_CC != 'msvc' and not conf.options.DISABLE_WERROR:
 		conf.check_cc(cflags=cflags, linkflags=linkflags, msg='Checking for required C flags')
 		conf.check_cxx(cxxflags=cflags, linkflags=linkflags, msg='Checking for required C++ flags')
 
@@ -241,10 +253,9 @@ def configure(conf):
 		conf.define('STDINT_H', 'pstdint.h')
 
 	conf.env.ENABLE_UTILS  = conf.options.ENABLE_UTILS
+	conf.env.ENABLE_FUZZER = conf.options.ENABLE_FUZZER
 	conf.env.DEDICATED     = conf.options.DEDICATED
 	conf.env.SINGLE_BINARY = conf.options.SINGLE_BINARY or conf.env.DEDICATED
-	if conf.env.DEST_OS == 'dos':
-		conf.env.SINGLE_BINARY = True
 
 	if conf.env.DEST_OS != 'win32':
 		conf.check_cc(lib='dl', mandatory=False)
@@ -287,11 +298,20 @@ def configure(conf):
 	else:
 		conf.undefine('HAVE_TGMATH_H')
 
+	# check if we can use alloca.h or malloc.h
+	if conf.check_cc(header_name='alloca.h', mandatory=False):
+		conf.define('ALLOCA_H', 'alloca.h')
+	elif conf.check_cc(header_name='malloc.h', mandatory=False):
+		conf.define('ALLOCA_H', 'malloc.h')
+
 	# indicate if we are packaging for Linux/BSD
-	if not conf.options.WIN_INSTALL and conf.env.DEST_OS not in ['win32', 'darwin', 'android']:
+	if conf.options.PACKAGING:
 		conf.env.LIBDIR = conf.env.BINDIR = '${PREFIX}/lib/xash3d'
 		conf.env.SHAREDIR = '${PREFIX}/share/xash3d'
 	else:
+		if sys.platform != 'win32' and not conf.env.DEST_OS == 'android':
+			conf.env.PREFIX = '/'
+
 		conf.env.SHAREDIR = conf.env.LIBDIR = conf.env.BINDIR = conf.env.PREFIX
 
 	conf.define('XASH_BUILD_COMMIT', conf.env.GIT_VERSION if conf.env.GIT_VERSION else 'notset')

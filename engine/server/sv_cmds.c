@@ -1002,19 +1002,19 @@ is available always
 */
 void SV_InitHostCommands( void )
 {
-	Cmd_AddCommand( "map", SV_Map_f, "start new level" );
+	Cmd_AddRestrictedCommand( "map", SV_Map_f, "start new level" );
 	Cmd_AddCommand( "maps", SV_Maps_f, "list maps" );
 
 	if( host.type == HOST_NORMAL )
 	{
-		Cmd_AddCommand( "newgame", SV_NewGame_f, "begin new game" );
-		Cmd_AddCommand( "hazardcourse", SV_HazardCourse_f, "starting a Hazard Course" );
-		Cmd_AddCommand( "map_background", SV_MapBackground_f, "set background map" );
-		Cmd_AddCommand( "load", SV_Load_f, "load a saved game file" );
-		Cmd_AddCommand( "loadquick", SV_QuickLoad_f, "load a quick-saved game file" );
-		Cmd_AddCommand( "reload", SV_Reload_f, "continue from latest save or restart level" );
-		Cmd_AddCommand( "killsave", SV_DeleteSave_f, "delete a saved game file and saveshot" );
-		Cmd_AddCommand( "nextmap", SV_NextMap_f, "load next level" );
+		Cmd_AddRestrictedCommand( "newgame", SV_NewGame_f, "begin new game" );
+		Cmd_AddRestrictedCommand( "hazardcourse", SV_HazardCourse_f, "starting a Hazard Course" );
+		Cmd_AddRestrictedCommand( "map_background", SV_MapBackground_f, "set background map" );
+		Cmd_AddRestrictedCommand( "load", SV_Load_f, "load a saved game file" );
+		Cmd_AddRestrictedCommand( "loadquick", SV_QuickLoad_f, "load a quick-saved game file" );
+		Cmd_AddRestrictedCommand( "reload", SV_Reload_f, "continue from latest save or restart level" );
+		Cmd_AddRestrictedCommand( "killsave", SV_DeleteSave_f, "delete a saved game file and saveshot" );
+		Cmd_AddRestrictedCommand( "nextmap", SV_NextMap_f, "load next level" );
 	}
 }
 
@@ -1041,6 +1041,8 @@ void SV_InitOperatorCommands( void )
 	Cmd_AddCommand( "changelevel", SV_ChangeLevel_f, "change level" );
 	Cmd_AddCommand( "changelevel2", SV_ChangeLevel2_f, "smooth change level" );
 	Cmd_AddCommand( "redirect", Rcon_Redirect_f, "force enable rcon redirection" );
+	Cmd_AddCommand( "logaddress", SV_SetLogAddress_f, "sets address and port for remote logging host" );
+	Cmd_AddCommand( "log", SV_ServerLog_f, "enables logging to file" );
 
 	if( host.type == HOST_NORMAL )
 	{
@@ -1075,6 +1077,8 @@ void SV_KillOperatorCommands( void )
 	Cmd_RemoveCommand( "shutdownserver" );
 	Cmd_RemoveCommand( "changelevel" );
 	Cmd_RemoveCommand( "changelevel2" );
+	Cmd_RemoveCommand( "logaddress" );
+	Cmd_RemoveCommand( "log" );
 
 	if( host.type == HOST_NORMAL )
 	{

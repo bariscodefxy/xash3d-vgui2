@@ -88,6 +88,7 @@ GNU General Public License for more details.
 #define SDL_SCANCODE_PRINTSCREEN SDLK_PRINT
 #define SDL_SCANCODE_UNKNOWN SDLK_UNKNOWN
 #define SDL_GetScancodeName( x ) "unknown"
+#define SDL_JoystickID Uint8
 #endif
 
 static qboolean SDLash_IsInstanceIDAGameController( SDL_JoystickID joyId )
@@ -270,30 +271,29 @@ SDLash_MouseEvent
 static void SDLash_MouseEvent( SDL_MouseButtonEvent button )
 {
 	int down = button.state != SDL_RELEASED;
-	qboolean istouch;
+	uint mstate = 0;
 
 #if SDL_VERSION_ATLEAST( 2, 0, 0 )
-	istouch = button.which == SDL_TOUCH_MOUSEID;
-#else // SDL_VERSION_ATLEAST( 2, 0, 0 )
-	istouch = false;
-#endif // SDL_VERSION_ATLEAST( 2, 0, 0 )
+	if( button.which == SDL_TOUCH_MOUSEID )
+		return;
+#endif
 
 	switch( button.button )
 	{
 	case SDL_BUTTON_LEFT:
-		SDLash_MouseKey( K_MOUSE1, down, istouch );
-		break;
-	case SDL_BUTTON_RIGHT:
-		SDLash_MouseKey( K_MOUSE2, down, istouch );
+		IN_MouseEvent( 0, down );
 		break;
 	case SDL_BUTTON_MIDDLE:
-		SDLash_MouseKey( K_MOUSE3, down, istouch );
+		IN_MouseEvent( 1, down );
+		break;
+	case SDL_BUTTON_RIGHT:
+		IN_MouseEvent( 2, down );
 		break;
 	case SDL_BUTTON_X1:
-		SDLash_MouseKey( K_MOUSE4, down, istouch );
+		IN_MouseEvent( 3, down );
 		break;
 	case SDL_BUTTON_X2:
-		SDLash_MouseKey( K_MOUSE5, down, istouch );
+		IN_MouseEvent( 4, down );
 		break;
 #if ! SDL_VERSION_ATLEAST( 2, 0, 0 )
 	case SDL_BUTTON_WHEELUP:
@@ -340,7 +340,7 @@ static void SDLash_ActiveEvent( int gain )
 	if( gain )
 	{
 		host.status = HOST_FRAME;
-		IN_ActivateMouse( true );
+		IN_ActivateMouse( );
 		if( dma.initialized && snd_mute_losefocus.value )
 		{
 			SNDDMA_Activate( true );
@@ -425,13 +425,10 @@ static void SDLash_EventFilter( SDL_Event *event )
 	{
 	/* Mouse events */
 	case SDL_MOUSEMOTION:
-		if( !host.mouse_visible
-#if SDL_VERSION_ATLEAST( 2, 0, 0 )
-		    && event->motion.which != SDL_TOUCH_MOUSEID )
-#else
-		    )
-#endif
-			IN_MouseEvent();
+		if( host.mouse_visible )
+		{
+			SDL_GetRelativeMouseState( NULL, NULL );
+		}
 		break;
 
 	case SDL_MOUSEBUTTONUP:

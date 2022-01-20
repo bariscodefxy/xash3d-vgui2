@@ -13,8 +13,8 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 */
 
-#ifdef _WIN32
 #include "common.h"
+#include "xash3d_mathlib.h"
 
 /*
 ===============================================================================
@@ -349,7 +349,7 @@ void Wcon_CreateConsole( void )
 	// create the scrollbuffer
 	GetClientRect( s_wcd.hWnd, &rect );
 
-	s_wcd.hwndBuffer = CreateWindowEx( WS_EX_DLGMODALFRAME|WS_EX_CLIENTEDGE, "edit", NULL, CONSTYLE, 0, 0, rect.right - rect.left, min(365, rect.bottom), s_wcd.hWnd, (HMENU)EDIT_ID, host.hInst, NULL );
+	s_wcd.hwndBuffer = CreateWindowEx( WS_EX_DLGMODALFRAME|WS_EX_CLIENTEDGE, "edit", NULL, CONSTYLE, 0, 0, rect.right - rect.left, Q_min(365, rect.bottom), s_wcd.hWnd, (HMENU)EDIT_ID, host.hInst, NULL );
 	SendMessage( s_wcd.hwndBuffer, WM_SETFONT, (WPARAM)s_wcd.hfBufferFont, 0 );
 
 	if( host.type == HOST_DEDICATED )
@@ -468,4 +468,3 @@ void Wcon_RegisterHotkeys( void )
 	// user can hit escape for quit
 	RegisterHotKey( s_wcd.hWnd, QUIT_ON_ESCAPE_ID, 0, VK_ESCAPE );
 }
-#endif // _WIN32

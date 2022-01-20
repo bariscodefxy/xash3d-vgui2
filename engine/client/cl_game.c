@@ -234,7 +234,7 @@ void CL_InitCDAudio( const char *filename )
 	pfile = (char *)afile;
 
 	// format: trackname\n [num]
-	while(( pfile = COM_ParseFile( pfile, token )) != NULL )
+	while(( pfile = COM_ParseFile( pfile, token, sizeof( token ))) != NULL )
 	{
 		if( !Q_stricmp( token, "blank" )) token[0] = '\0';
 		Q_strncpy( clgame.cdtracks[c], token, sizeof( clgame.cdtracks[0] ));
@@ -966,29 +966,17 @@ static void CL_DrawLoadingOrPaused( qboolean paused, float percent )
 
 	SPR_AdjustSizei( &x, &y, &width, &height );
 
-	if( !paused && cl_allow_levelshots->value )
+	if( !paused )
 	{
-		float	step, s2;
-
-		ref.dllFuncs.Color4ub( 128, 128, 128, 255 );
+		ref.dllFuncs.Color4ub( 255, 255, 255, 255 );
 		ref.dllFuncs.GL_SetRenderMode( kRenderTransTexture );
 		ref.dllFuncs.R_DrawStretchPic( x, y, width, height, 0, 0, 1, 1, cls.loadingBar );
-
-		step = (float)width / 100.0f;
-		right = (int)ceil( percent * step );
-		s2 = (float)right / width;
-		width = right;
-
-		ref.dllFuncs.Color4ub( 208, 152, 0, 255 );
-		ref.dllFuncs.GL_SetRenderMode( kRenderTransTexture );
-		ref.dllFuncs.R_DrawStretchPic( x, y, width, height, 0, 0, s2, 1, cls.loadingBar );
-		ref.dllFuncs.Color4ub( 255, 255, 255, 255 );
 	}
 	else
 	{
 		ref.dllFuncs.Color4ub( 255, 255, 255, 255 );
 		ref.dllFuncs.GL_SetRenderMode( kRenderTransTexture );
-		ref.dllFuncs.R_DrawStretchPic( x, y, width, height, 0, 0, 1, 1, cls.loadingBar );
+		ref.dllFuncs.R_DrawStretchPic( x, y, width, height, 0, 0, 1, 1, cls.pauseIcon );
 	}
 }
 
@@ -1535,7 +1523,7 @@ static client_sprite_t *pfnSPR_GetList( char *psz, int *piCount )
 	if( !afile ) return NULL;
 
 	pfile = (char *)afile;
-	pfile = COM_ParseFile( pfile, token );
+	pfile = COM_ParseFile( pfile, token, sizeof( token ));
 	numSprites = Q_atoi( token );
 
 	Q_strncpy( pEntry->szListName, psz, sizeof( pEntry->szListName ));
@@ -1545,30 +1533,30 @@ static client_sprite_t *pfnSPR_GetList( char *psz, int *piCount )
 
 	for( index = 0; index < numSprites; index++ )
 	{
-		if(( pfile = COM_ParseFile( pfile, token )) == NULL )
+		if(( pfile = COM_ParseFile( pfile, token, sizeof( token ))) == NULL )
 			break;
 
 		Q_strncpy( pEntry->pList[index].szName, token, sizeof( pEntry->pList[0].szName ));
 
 		// read resolution
-		pfile = COM_ParseFile( pfile, token );
+		pfile = COM_ParseFile( pfile, token, sizeof( token ));
 		pEntry->pList[index].iRes = Q_atoi( token );
 
 		// read spritename
-		pfile = COM_ParseFile( pfile, token );
+		pfile = COM_ParseFile( pfile, token, sizeof( token ));
 		Q_strncpy( pEntry->pList[index].szSprite, token, sizeof( pEntry->pList[0].szSprite ));
 
 		// parse rectangle
-		pfile = COM_ParseFile( pfile, token );
+		pfile = COM_ParseFile( pfile, token, sizeof( token ));
 		pEntry->pList[index].rc.left = Q_atoi( token );
 
-		pfile = COM_ParseFile( pfile, token );
+		pfile = COM_ParseFile( pfile, token, sizeof( token ));
 		pEntry->pList[index].rc.top = Q_atoi( token );
 
-		pfile = COM_ParseFile( pfile, token );
+		pfile = COM_ParseFile( pfile, token, sizeof( token ));
 		pEntry->pList[index].rc.right = pEntry->pList[index].rc.left + Q_atoi( token );
 
-		pfile = COM_ParseFile( pfile, token );
+		pfile = COM_ParseFile( pfile, token, sizeof( token ));
 		pEntry->pList[index].rc.bottom = pEntry->pList[index].rc.top + Q_atoi( token );
 
 		pEntry->count++;
@@ -1752,6 +1740,29 @@ static int GAME_EXPORT pfnClientCmd( const char *szCmdString )
 		// will exec later
 		Q_strncat( host.deferred_cmd, va( "%s\n", szCmdString ), sizeof( host.deferred_cmd ));
 	}
+
+	return 1;
+}
+
+/*
+=============
+pfnFilteredClientCmd
+=============
+*/
+static int GAME_EXPORT pfnFilteredClientCmd( const char *szCmdString )
+{
+	if( !COM_CheckString( szCmdString ))
+		return 0;
+
+	// a1ba:
+	// there should be stufftext validator, that checks
+	// hardcoded commands and disallows them before passing to
+	// filtered buffer, returning 0
+	// I've replaced it by hooking potentially exploitable
+	// commands and variables(motd_write, motdfile, etc) in client interfaces
+
+	Cbuf_AddFilteredText( szCmdString );
+	Cbuf_AddFilteredText( "\n" );
 
 	return 1;
 }
@@ -3084,9 +3095,7 @@ char *pfnParseFile( char *data, char *token )
 {
 	char	*out;
 
-	host.com_handlecolon = true;
-	out = COM_ParseFile( data, token );
-	host.com_handlecolon = false;
+	out = _COM_ParseFileSafe( data, token, INT_MAX, PFILE_HANDLECOLON, NULL );
 
 	return out;
 }
@@ -3898,10 +3907,7 @@ static cl_enginefunc_t gEngfuncs =
 	pfnGetAppID,
 	Cmd_AliasGetList,
 	pfnVguiWrap2_GetMouseDelta,
-
-	// HACKHACK: added it here so it wouldn't cause overflow or segfault
-	// TODO: itself client command filtering is not implemented yet
-	pfnClientCmd
+	pfnFilteredClientCmd
 };
 
 void CL_UnloadProgs( void )
@@ -3967,7 +3973,7 @@ qboolean CL_LoadProgs( const char *name )
 #else
 	// this doesn't mean other platforms uses SDL2 in any case
 	// it just helps input code to stay platform-independent
-	clgame.client_dll_uses_sdl = false;
+	clgame.client_dll_uses_sdl = true;
 #endif
 
 	clgame.hInstance = COM_LoadLibrary( name, false, false );

@@ -46,9 +46,9 @@ build_engine()
 	fi
 
 	if [ "$1" = "dedicated" ]; then
-		./waf configure -T release -d -W $AMD64 || die
+		./waf configure -T release -d $AMD64 || die
 	elif [ "$1" = "full" ]; then
-		./waf configure --sdl2=SDL2_linux -T release --enable-stb --prefix="$APPDIR" -W $AMD64 --enable-utils || die
+		./waf configure --sdl2=SDL2_linux -T release --enable-stb $AMD64 --enable-utils || die
 	else
 		die
 	fi
@@ -60,7 +60,7 @@ build_appimage()
 {
 	cd "$BUILDDIR" || die
 
-	./waf install || die
+	./waf install --destdir="$APPDIR" || die
 
 	# Generate extras.pak
 	python3 scripts/makepak.py xash-extras/ "$APPDIR/extras.pak"
@@ -104,11 +104,14 @@ EOF
 	./appimagetool.AppImage "$APPDIR" "$APPIMAGE"
 }
 
+mkdir -p artifacts/
+
 rm -rf build # clean-up build directory
 build_engine dedicated
-mv build/engine/xash xashds-linux-$ARCH
+mv build/engine/xash artifacts/xashds-linux-$ARCH
 
 rm -rf build
 build_sdl2
 build_engine full
 build_appimage
+mv $APPIMAGE artifacts/

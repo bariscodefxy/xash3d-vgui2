@@ -94,7 +94,11 @@ bool CEngineSurface :: hasFocus( void )
 void CEngineSurface :: setCursor( Cursor *cursor )
 {
 	_currentCursor = cursor;
-	g_api->CursorSelect( (VGUI_DefaultCursor)cursor->getDefaultCursor() );
+
+	if( cursor )
+	{
+		g_api->CursorSelect( (VGUI_DefaultCursor)cursor->getDefaultCursor() );
+	}
 }
 
 void CEngineSurface :: SetupPaintState( const PaintStack *paintState )
@@ -440,17 +444,11 @@ void CEngineSurface :: popMakeCurrent( Panel *panel )
 
 bool CEngineSurface :: setFullscreenMode( int wide, int tall, int bpp )
 {
-	// NOTE: Xash3D always working in 32-bit mode
-	// Skip it now. VGUI cannot change video modes
 	return false;
 }
 	
 void CEngineSurface :: setWindowedMode( void )
 {
-	// Skip it now. VGUI cannot change video modes
-	/*
-	Cvar_SetFloat( "fullscreen", 0.0f );
-	*/
 }
 
 void CEngineSurface :: PushMakeCurrent(int insets[4], int absExtents[4], int clipRect[4])

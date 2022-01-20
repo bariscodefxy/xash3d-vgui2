@@ -107,9 +107,9 @@ def build_vgui(bld):
 
 	libs.append('VGUI')
 
-	source = bld.path.ant_glob(['*.cpp', 'vgui2/*.cpp', 'miniutl/*.cpp', 'vinterface/*.cpp'])
+	source = bld.path.ant_glob(['*.cpp', 'vgui2/*.cpp', 'vinterface/*.cpp'])
 
-	includes = [ '.', 'vinterface', 'filesystem', 'miniutl/', '../common', '../engine' ]
+	includes = [ '.', 'vinterface', 'filesystem', '../common', '../engine', '../public' ]
 
 	bld.shlib(
 		source   = source,
