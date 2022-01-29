@@ -549,7 +549,7 @@ void CEngineSurface :: DrawPrintText(const wchar_t *text, int textLen)
 
 void CEngineSurface :: DrawUnicodeChar(wchar_t wch, bool additive)
 {
-	int curCh = g_api->ProcessUtfChar(wch);
+	int curCh = g_api->ProcessUtfChar(wch) & 0xFF;
 	if (!curCh)
 		return;
 
