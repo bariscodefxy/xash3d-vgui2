@@ -786,6 +786,12 @@ void GAME_EXPORT Key_Event( int key, int down )
 		return;
 	}
 
+	if ( VGui_NeedKeyboard() )
+	{
+		Key_ClearStates();
+		return;
+	}
+
 	// distribute the key down event to the apropriate handler
 	if( cls.key_dest == key_game )
 	{

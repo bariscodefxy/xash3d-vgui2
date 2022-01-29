@@ -562,3 +562,10 @@ int VGui_DrawCharacter( int x, int y, int ch, int r, int g, int b, unsigned int 
 
 	return -1;
 }
+
+qboolean VGui_NeedKeyboard( void )
+{
+	if ( vgui.NeedKeyboard )
+		return vgui.NeedKeyboard();
+	return FALSE;
+}
