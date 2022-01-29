@@ -19,6 +19,7 @@ libcef.dll
 
 6. Copy `SDL2.dll` from your SDL2 package to engine install dir
 7. Download & install Xash Extras for the main menu
-8. Run `xash3d.exe -game cstrike` to launch CS 1.6
+8. Create `steam_appid.txt`, put `10` inside the file, then save in engine install dir
+9. Run `xash3d.exe -game cstrike` to launch CS 1.6
 
 Note that your Steam account must own CS 1.6 and Steam must be running for this to work.
