@@ -667,7 +667,7 @@ void CEngineSurface :: GetCharABCwide(int font, int ch, int &a, int &b, int &c)
 	if (font < 0 || font >= staticFontDar.getCount() || staticFontDar[font] == nullptr)
 		return;
 
-	return staticFontDar[font]->getCharABCwide(ch, a, b, c);
+	return staticFontDar[font]->getCharABCwide(g_api->ProcessUtfChar(ch) & 0xFF, a, b, c);
 }
 
 int CEngineSurface :: GetCharacterWidth(int font, int ch)
@@ -676,7 +676,7 @@ int CEngineSurface :: GetCharacterWidth(int font, int ch)
 		return 0;
 
 	int a, b, c;
-	staticFontDar[font]->getCharABCwide(ch, a, b, c);
+	staticFontDar[font]->getCharABCwide(g_api->ProcessUtfChar(ch) & 0xFF, a, b, c);
 	return a + b + c;
 }
 
