@@ -136,5 +136,6 @@ void VGui2_MouseMove(int x, int y)
 
 qboolean VGui2_NeedKeyboard()
 {
+    vgui2::surface()->CalculateMouseVisible();
     return vgui2::surface()->NeedKBInput();
 }
