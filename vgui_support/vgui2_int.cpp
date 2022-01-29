@@ -16,7 +16,7 @@ void VGui2_Startup(const char *clientlib)
     if (clientlib == nullptr)
         return;
 
-    fileSystemModule = Sys_LoadModule("filesystem_stdio.dll");
+    fileSystemModule = Sys_LoadModule("filesystem_stdio");
     auto fileSystemFactory = Sys_GetFactory(fileSystemModule);
     fileSystem = (IFileSystem *)fileSystemFactory(FILESYSTEM_INTERFACE_VERSION, nullptr);
 

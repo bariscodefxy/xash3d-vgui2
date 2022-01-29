@@ -906,8 +906,8 @@ void BaseUI::Initialize(CreateInterfaceFn *factories, int count)
     if (initialized)
         return;
 
-    vgui2Module = Sys_LoadModule("vgui2.dll");
-    chromeModule = Sys_LoadModule("chromehtml.dll");
+    vgui2Module = Sys_LoadModule("vgui2");
+    chromeModule = Sys_LoadModule("chromehtml");
 
     factoryList[numFactories++] = factories[0];
     factoryList[numFactories++] = Sys_GetFactory(vgui2Module);
