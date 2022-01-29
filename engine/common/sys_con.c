@@ -17,6 +17,8 @@ GNU General Public License for more details.
 #if XASH_ANDROID
 #include <android/log.h>
 #endif
+#include <string.h>
+#include <errno.h>
 
 #if !XASH_WIN32 && !XASH_MOBILE_PLATFORM
 #define XASH_COLORIZE_CONSOLE
@@ -113,11 +115,16 @@ void Sys_InitLog( void )
 	if( s_ld.log_active )
 	{
 		s_ld.logfile = fopen( s_ld.log_path, mode );
-		if( !s_ld.logfile ) Con_Reportf( S_ERROR  "Sys_InitLog: can't create log file %s\n", s_ld.log_path );
-
-		fprintf( s_ld.logfile, "=================================================================================\n" );
-		fprintf( s_ld.logfile, "\t%s (build %i) started at %s\n", s_ld.title, Q_buildnum(), Q_timestamp( TIME_FULL ));
-		fprintf( s_ld.logfile, "=================================================================================\n" );
+		if( !s_ld.logfile )
+		{
+			Con_Reportf( S_ERROR  "Sys_InitLog: can't create log file %s: %s\n", s_ld.log_path, strerror( errno ) );
+		}
+		else
+		{
+			fprintf( s_ld.logfile, "=================================================================================\n" );
+			fprintf( s_ld.logfile, "\t%s (build %i) started at %s\n", s_ld.title, Q_buildnum(), Q_timestamp( TIME_FULL ));
+			fprintf( s_ld.logfile, "=================================================================================\n" );
+		}
 	}
 }
 

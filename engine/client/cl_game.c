@@ -2932,17 +2932,16 @@ pfnDrawString
 */
 static int GAME_EXPORT pfnDrawString( int x, int y, const char *str, int r, int g, int b )
 {
-	int width = 0;
-
+	int iWidth = 0;
 	Con_UtfProcessChar(0);
 
 	// draw the string until we hit the null character or a newline character
 	for ( ; *str != 0 && *str != '\n'; str++ )
 	{
-		width += pfnDrawCharacter( x + width, y, (unsigned char)*str, r, g, b );
+		iWidth += pfnVGUI2DrawCharacterAdditive( x + iWidth, y, (unsigned char)*str, r, g, b, 0 );
 	}
 
-	return width;
+	return iWidth;
 }
 
 /*
@@ -2957,9 +2956,8 @@ static int GAME_EXPORT pfnDrawStringReverse( int x, int y, const char *str, int 
 	char *szIt;
 	int width = 0;
 	for( szIt = (char*)str; *szIt != 0; szIt++ )
-		width += clgame.scrInfo.charWidths[ (unsigned char) *szIt ];
-	pfnDrawString( x - width, y, str, r, g, b );
-	return width;
+		x -= clgame.scrInfo.charWidths[ (unsigned char) *szIt ];
+	return pfnDrawString( x, y, str, r, g, b );
 }
 
 /*
