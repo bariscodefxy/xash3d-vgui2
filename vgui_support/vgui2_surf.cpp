@@ -9,6 +9,7 @@
 #include <VGUI_Dar.h>
 
 #include <string.h>
+#include <stdio.h>
 
 class RootPanel : public vgui2::Panel
 {
@@ -946,7 +947,13 @@ void BaseUI::Start(IEngineSurface *engineSurface, int interfaceVersion)
     vgui2::scheme()->LoadSchemeFromFile("resource/trackerscheme.res", "BaseUI");
 
     vgui2::localize()->AddFile(vgui2::filesystem(), "resource/valve_%language%.txt");
-    vgui2::localize()->AddFile(vgui2::filesystem(), "resource/cstrike_%language%.txt");
+
+    char szMod[32];
+    vgui2::system()->GetCommandLineParamValue("-game", szMod, sizeof(szMod));
+    char szLocalizeFile[260];
+    snprintf(szLocalizeFile, sizeof(szLocalizeFile), "resource/%s_%%language%%.txt", szMod);
+    szLocalizeFile[sizeof(szLocalizeFile) - 1] = '\0';
+    vgui2::localize()->AddFile(vgui2::filesystem(), szLocalizeFile);
 
     vgui2::ivgui()->Start();
     vgui2::ivgui()->SetSleep(false);
