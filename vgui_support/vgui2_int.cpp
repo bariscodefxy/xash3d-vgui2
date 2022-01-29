@@ -134,11 +134,6 @@ void VGui2_MouseMove(int x, int y)
     vgui2::inputinternal()->InternalCursorMoved(x, y);
 }
 
-qboolean VGui2_NeedMouse()
-{
-    return vgui2::surface()->IsCursorVisible();
-}
-
 qboolean VGui2_NeedKeyboard()
 {
     return vgui2::surface()->NeedKBInput();

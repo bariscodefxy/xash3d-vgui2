@@ -181,7 +181,7 @@ vguiapi_t vgui =
 	NULL, // VGUI_UploadTextureFile
 	NULL, // VGUI_UploadTextureBGRA
 	NULL, // VGUI_UploadTextureBlockBGRA
-	NULL,
+	NULL, // VGUI_DrawPolygon
 	NULL,
 	NULL,
 	NULL,
@@ -211,6 +211,7 @@ void VGui_FillAPIFromRef( vguiapi_t *to, const ref_interface_t *from )
 	to->UploadTextureFile = from->VGUI_UploadTextureFile;
 	to->UploadTextureBGRA = from->VGUI_UploadTextureBGRA;
 	to->UploadTextureBlockBGRA = from->VGUI_UploadTextureBlockBGRA;
+	to->DrawPolygon = from->VGUI_DrawPolygon;
 }
 
 /*

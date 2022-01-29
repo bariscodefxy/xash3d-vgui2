@@ -761,7 +761,7 @@ void BaseUISurface::SurfaceSetCursorPos(int x, int y)
 
 void BaseUISurface::DrawTexturedPolygon(vgui2::VGuiVertex *pVertices, int n)
 {
-    // engineSurface sucks
+    engineSurface->DrawTexturedPolygon(pVertices, n);
 }
 
 int BaseUISurface::GetFontAscent(vgui2::HFont font, wchar_t wch)

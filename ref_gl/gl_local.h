@@ -514,6 +514,7 @@ void VGUI_DrawQuad( const vpoint_t *ul, const vpoint_t *lr );
 void VGUI_GetTextureSizes( int *width, int *height );
 int VGUI_GenerateTexture( void );
 void VGUI_UploadTextureFile( int id, const char *filename );
+void VGUI_DrawPolygon( const vpoint_t *vertices, int n );
 
 //#include "vid_common.h"
 

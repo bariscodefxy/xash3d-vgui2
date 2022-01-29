@@ -137,6 +137,7 @@ public:
 	virtual void DrawSetTexture(int id);
 	virtual void DrawGetTextureSize(int id, int &wide, int &tall);
 	virtual void DrawTexturedRect(int x0, int y0, int x1, int y1);
+	virtual void DrawTexturedPolygon(vgui2::VGuiVertex *pVertices, int n);
 	virtual int CreateNewTextureID();
     virtual bool DeleteTextureByID(int id);
     virtual void DrawUpdateRegionTextureBGRA(int nTextureID, int x, int y, const unsigned char *pchData, int wide, int tall);

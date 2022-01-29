@@ -1,6 +1,8 @@
 #ifndef IENGINESURFACE_H
 #define IENGINESURFACE_H
 
+#include <VGuiVertex.h>
+
 #ifdef CreateFont
 #undef CreateFont
 #endif
@@ -34,6 +36,7 @@ public:
 	virtual void DrawSetTexture(int id) = 0;
 	virtual void DrawGetTextureSize(int id, int &wide, int &tall) = 0;
 	virtual void DrawTexturedRect(int x0, int y0, int x1, int y1) = 0;
+	virtual void DrawTexturedPolygon(vgui2::VGuiVertex *pVertices, int n) = 0;
 	virtual int CreateNewTextureID() = 0;
     virtual bool DeleteTextureByID(int id) = 0;
     virtual void DrawUpdateRegionTextureBGRA(int nTextureID, int x, int y, const unsigned char *pchData, int wide, int tall) = 0;

@@ -715,3 +715,19 @@ void CEngineSurface :: GetCursorPos(int &x, int &y)
 {
 	GetMousePos(x, y);
 }
+
+void CEngineSurface :: DrawTexturedPolygon(vgui2::VGuiVertex *pVertices, int n)
+{
+	vpoint_t *vertices = (vpoint_t *)malloc(sizeof(vpoint_t) * n);
+
+	if ( vertices == NULL )
+		return;
+
+	for ( int i = 0; i < n; i++ )
+		InitVertex( vertices[i], pVertices[i].GetX(), pVertices[i].GetY(), pVertices[i].GetU(), pVertices[i].GetV() );
+
+	g_api->SetupDrawingImage( _drawColor );	
+	g_api->DrawPolygon( vertices, n );
+
+	free(vertices);
+}

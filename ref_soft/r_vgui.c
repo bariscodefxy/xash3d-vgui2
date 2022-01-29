@@ -271,3 +271,16 @@ void GAME_EXPORT VGUI_UploadTextureFile( int id, const char *filename )
 {
 	g_textures[id] = GL_LoadTexture( filename, NULL, 0, TF_IMAGE );
 }
+
+void GAME_EXPORT VGUI_DrawPolygon( const vpoint_t *vectices, int n )
+{
+	int width, height;
+	float xscale, yscale;
+
+	gEngfuncs.CL_GetScreenInfo( &width, &height );
+
+	xscale = gpGlobals->width / (float)width;
+	yscale = gpGlobals->height / (float)height;
+
+	ASSERT( vectices != NULL );
+}
