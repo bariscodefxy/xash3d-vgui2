@@ -8,6 +8,8 @@ static CSysModule *fileSystemModule;
 static IFileSystem *fileSystem;
 static IBaseUI *baseUI;
 
+void CallClientF( void (*F)(void *pv) );
+
 void VGui2_Startup(const char *clientlib)
 {
     if (baseUI != nullptr)
@@ -23,6 +25,9 @@ void VGui2_Startup(const char *clientlib)
     char szClientLib[MAX_OSPATH];
     fileSystem->GetLocalPath(clientlib, szClientLib, sizeof(szClientLib));
     CSysModule *clientModule = Sys_LoadModule(szClientLib);
+    void (*F)(void *pv) = (void (*)(void *))Sys_GetProcAddress(clientModule, "F");
+    if (F)
+        CallClientF(F);
 
     CreateInterfaceFn factories[3];
     factories[0] = Sys_GetFactoryThis();
