@@ -626,14 +626,20 @@ void BaseUISurface::ReleasePanel(vgui2::VPANEL panel)
 
 void BaseUISurface::MovePopupToFront(vgui2::VPANEL panel)
 {
-    popups.removeElement(panel);
-    popups.addElement(panel);
+    if (popups.hasElement(panel))
+    {
+        popups.removeElement(panel);
+        popups.addElement(panel);
+    }
 }
 
 void BaseUISurface::MovePopupToBack(vgui2::VPANEL panel)
 {
-    popups.removeElement(panel);
-    popups.insertElementAt(panel, 0);
+    if (popups.hasElement(panel))
+    {
+        popups.removeElement(panel);
+        popups.insertElementAt(panel, 0);
+    }
 }
 
 void BaseUISurface::SolveTraverse(vgui2::VPANEL panel, bool forceApplySchemeSettings)
