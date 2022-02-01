@@ -3936,6 +3936,8 @@ void CL_UnloadProgs( void )
 	Cmd_Unlink( CMD_CLIENTDLL );
 }
 
+void GetSecuredClientAPI( CL_EXPORT_FUNCS F );
+
 qboolean CL_LoadProgs( const char *name )
 {
 	static playermove_t		gpMove;
@@ -3988,7 +3990,17 @@ qboolean CL_LoadProgs( const char *name )
 
 		// trying to fill interface now
 		GetClientAPI( &clgame.dllFuncs );
+	}
+	else if(( GetClientAPI = (void *)COM_GetProcAddress( clgame.hInstance, "F" )) != NULL )
+	{
+		Con_Reportf( "CL_LoadProgs: found single callback export (secured client dlls)\n" );
 
+		// trying to fill interface now
+		GetSecuredClientAPI( GetClientAPI );
+	}
+
+	if ( GetClientAPI != NULL )
+	{
 		// check critical functions again
 		for( func = cdll_exports; func && func->name; func++ )
 		{
