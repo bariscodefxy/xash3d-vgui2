@@ -184,7 +184,6 @@ vguiapi_t vgui =
 	NULL, // VGUI_DrawPolygon
 	NULL,
 	NULL,
-	NULL,
 };
 
 qboolean VGui_IsActive( void )
@@ -334,12 +333,6 @@ void VGui_Startup( const char *clientlib, int width, int height )
 	{
 		failed = true;
 	}
-}
-
-void VGui_PostClientInit( void )
-{
-	if ( vgui.PostClientInit )
-		vgui.PostClientInit();
 }
 
 /*

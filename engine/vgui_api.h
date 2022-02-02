@@ -214,7 +214,6 @@ typedef struct  vguiapi_s
 	void	(*UploadTextureBGRA)( int id, const char *buffer, int width, int height );
 	void	(*UploadTextureBlockBGRA)( int id, int drawX, int drawY, const byte *rgba, int blockWidth, int blockHeight );
 	void	(*DrawPolygon)( const vpoint_t *vertices, int n );
-	void	(*PostClientInit)( void );
 	int 	(*DrawCharacter)(int x, int y, int ch, int r, int g, int b, unsigned int font, qboolean additive);
 	qboolean	(*NeedKeyboard)( void );
 } vguiapi_t;

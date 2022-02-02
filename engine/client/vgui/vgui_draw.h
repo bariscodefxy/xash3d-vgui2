@@ -26,7 +26,6 @@ extern "C" {
 // vgui_draw.c
 //
 void VGui_Startup( const char *clientlib, int width, int height );
-void VGui_PostClientInit( void );
 void VGui_Shutdown( void );
 void VGui_Paint( void );
 void VGui_RunFrame( void );

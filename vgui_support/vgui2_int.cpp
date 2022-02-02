@@ -8,7 +8,7 @@ static CSysModule *fileSystemModule;
 static IFileSystem *fileSystem;
 static IBaseUI *baseUI;
 
-void VGui2_Startup(const char *clientlib)
+void VGui2_Startup(const char *clientlib, IEngineSurface *engineSurface)
 {
     if (baseUI != nullptr)
         return;
@@ -31,10 +31,6 @@ void VGui2_Startup(const char *clientlib)
 
     baseUI = (IBaseUI *)factories[0](BASEUI_INTERFACE_VERSION, nullptr);
     baseUI->Initialize(factories, 3);
-}
-
-void VGui2_PostClientInit(IEngineSurface *engineSurface)
-{
     baseUI->Start(engineSurface, 0);
 }
 

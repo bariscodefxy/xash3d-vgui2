@@ -28,8 +28,7 @@ from your version.
 
 #include "IEngineSurface.h"
 
-void VGui2_Startup(const char *clientlib);
-void VGui2_PostClientInit(IEngineSurface *engineSurface);
+void VGui2_Startup(const char *clientlib, IEngineSurface *engineSurface);
 void VGui2_Shutdown();
 void VGui2_Paint();
 int VGui2_DrawCharacter(int x, int y, int ch, int r, int g, int b, unsigned int font, qboolean additive);
@@ -46,7 +45,7 @@ CEngineApp          staticApp;
 
 void VGui_Startup( const char *clientlib, int width, int height )
 {
-	VGui2_Startup(clientlib);
+	VGui2_Startup(clientlib, (IEngineSurface *)surface);
 
 	if( rootpanel )
 	{
@@ -120,10 +119,6 @@ void *VGui_GetPanel( void )
 {
 	return (void *)rootpanel;
 }
-void VGui_PostClientInit( void )
-{
-	VGui2_PostClientInit((IEngineSurface *)surface);
-}
 }
 
 #ifdef INTERNAL_VGUI_SUPPORT
@@ -141,7 +136,6 @@ extern "C" EXPORT void InitAPI(vguiapi_t * api)
 	g_api->MouseMove = VGUI_MouseMove;
 	g_api->Key = VGUI_Key;
 
-	g_api->PostClientInit = VGui_PostClientInit;
 	g_api->DrawCharacter = VGui2_DrawCharacter;
 	g_api->NeedKeyboard = VGui2_NeedKeyboard;
 }
