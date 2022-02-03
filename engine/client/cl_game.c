@@ -2888,23 +2888,16 @@ pfnVGUI2DrawCharacter
 */
 static int GAME_EXPORT pfnVGUI2DrawCharacter( int x, int y, int number, unsigned int font )
 {
-	if( !cls.creditsFont.valid )
-		return 0;
+	int r, g, b, iWidth;
 
-	number &= 255;
+	r = clgame.ds.textColor[0];
+	g = clgame.ds.textColor[1];
+	b = clgame.ds.textColor[2];
 
-	number = Con_UtfProcessChar( number );
+	if ( ( iWidth = VGui_DrawCharacter( x, y, number, r, g, b, font, false ) ) != -1 )
+		return iWidth;
 
-	if( number < 32 ) return 0;
-	if( y < -clgame.scrInfo.iCharHeight )
-		return 0;
-
-	clgame.ds.adjust_size = true;
-	gameui.ds.gl_texturenum = cls.creditsFont.hFontTexture;
-	pfnPIC_DrawAdditive( x, y, -1, -1, &cls.creditsFont.fontRc[number] );
-	clgame.ds.adjust_size = false;
-
-	return clgame.scrInfo.charWidths[number];
+	return pfnDrawCharacter( x, y, number, r, g, b );
 }
 
 /*
@@ -2915,8 +2908,10 @@ pfnVGUI2DrawCharacterAdditive
 */
 static int GAME_EXPORT pfnVGUI2DrawCharacterAdditive( int x, int y, int ch, int r, int g, int b, unsigned int font )
 {
-	if( !hud_utf8->value )
-		ch = Con_UtfProcessChar( ch );
+	int iWidth;
+
+	if ( ( iWidth = VGui_DrawCharacter( x, y, ch, r, g, b, font, true ) ) != -1 )
+		return iWidth;
 
 	return pfnDrawCharacter( x, y, ch, r, g, b );
 }
@@ -2935,7 +2930,7 @@ static int GAME_EXPORT pfnDrawString( int x, int y, const char *str, int r, int 
 	// draw the string until we hit the null character or a newline character
 	for ( ; *str != 0 && *str != '\n'; str++ )
 	{
-		iWidth += pfnVGUI2DrawCharacterAdditive( x + iWidth, y, (unsigned char)*str, r, g, b, 0 );
+		iWidth += pfnDrawCharacter( x + iWidth, y, (unsigned char)*str, r, g, b );
 	}
 
 	return iWidth;
