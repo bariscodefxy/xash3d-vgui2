@@ -561,5 +561,5 @@ qboolean VGui_NeedKeyboard( void )
 {
 	if ( vgui.NeedKeyboard )
 		return vgui.NeedKeyboard();
-	return FALSE;
+	return false;
 }
