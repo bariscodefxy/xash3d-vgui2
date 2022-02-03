@@ -335,6 +335,8 @@ void VGui_Startup( const char *clientlib, int width, int height )
 	}
 }
 
+
+
 /*
 ================
 VGui_Shutdown

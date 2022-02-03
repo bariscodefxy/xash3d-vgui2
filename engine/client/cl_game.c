@@ -2888,20 +2888,23 @@ pfnVGUI2DrawCharacter
 */
 static int GAME_EXPORT pfnVGUI2DrawCharacter( int x, int y, int number, unsigned int font )
 {
-	int r, g, b, width;
+	if( !cls.creditsFont.valid )
+		return 0;
 
-	if( !hud_utf8->value )
-		number = Con_UtfProcessChar( number );
+	number &= 255;
 
-	r = clgame.ds.textColor[0];
-	g = clgame.ds.textColor[1];
-	b = clgame.ds.textColor[2];
+	number = Con_UtfProcessChar( number );
 
-	width = VGui_DrawCharacter( x, y, number, r, g, b, font, false );;
-	if ( width == -1 )
-		width = pfnDrawCharacter( x, y, number, r, g, b );
-	
-	return width;
+	if( number < 32 ) return 0;
+	if( y < -clgame.scrInfo.iCharHeight )
+		return 0;
+
+	clgame.ds.adjust_size = true;
+	gameui.ds.gl_texturenum = cls.creditsFont.hFontTexture;
+	pfnPIC_DrawAdditive( x, y, -1, -1, &cls.creditsFont.fontRc[number] );
+	clgame.ds.adjust_size = false;
+
+	return clgame.scrInfo.charWidths[number];
 }
 
 /*
@@ -2912,16 +2915,10 @@ pfnVGUI2DrawCharacterAdditive
 */
 static int GAME_EXPORT pfnVGUI2DrawCharacterAdditive( int x, int y, int ch, int r, int g, int b, unsigned int font )
 {
-	int width;
-	
 	if( !hud_utf8->value )
 		ch = Con_UtfProcessChar( ch );
 
-	width = VGui_DrawCharacter( x, y, ch, r, g, b, font, true );
-	if ( width == -1 )
-		width = pfnDrawCharacter( x, y, ch, r, g, b );
-	
-	return width;
+	return pfnDrawCharacter( x, y, ch, r, g, b );
 }
 
 /*
@@ -2954,7 +2951,6 @@ static int GAME_EXPORT pfnDrawStringReverse( int x, int y, const char *str, int 
 {
 	// find the end of the string
 	char *szIt;
-	int width = 0;
 	for( szIt = (char*)str; *szIt != 0; szIt++ )
 		x -= clgame.scrInfo.charWidths[ (unsigned char) *szIt ];
 	return pfnDrawString( x, y, str, r, g, b );
