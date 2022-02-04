@@ -1,8 +1,7 @@
+#include "vgui_surf.h"
+
 #include "IBaseUI.h"
 #include "VGui2Interfaces.h"
-#include "IEngineSurface.h"
-
-#include <vgui_api.h>
 
 static CSysModule *fileSystemModule;
 static IFileSystem *fileSystem;

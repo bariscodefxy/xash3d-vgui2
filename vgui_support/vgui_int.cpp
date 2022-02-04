@@ -26,8 +26,6 @@ from your version.
 #include "vgui_main.h"
 #include "xash3d_types.h"
 
-#include "IEngineSurface.h"
-
 void VGui2_Startup(const char *clientlib, IEngineSurface *engineSurface);
 void VGui2_Shutdown();
 void VGui2_Paint();

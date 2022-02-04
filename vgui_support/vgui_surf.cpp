@@ -412,8 +412,6 @@ void CEngineSurface :: pushMakeCurrent( Panel* panel, bool useInsets )
 
 	assert( staticPaintStackPos < MAX_PAINT_STACK );
 
-	paintState->m_pPanel = panel;
-
 	// determine corrected top left origin
 	paintState->iTranslateX = insets[0] + absExtents[0];
 	paintState->iTranslateY = insets[1] + absExtents[1];
@@ -433,9 +431,6 @@ void CEngineSurface :: popMakeCurrent( Panel *panel )
 
 	// more pops that pushes?
 	assert( top >= 0 );
-
-	// didn't pop in reverse order of push?
-	assert( paintStack[top].m_pPanel == panel );
 
 	staticPaintStackPos--;
 
@@ -640,12 +635,12 @@ int CEngineSurface :: CreateFont()
 	return staticFontDar.getCount() - 1;
 }
 
-bool CEngineSurface :: AddGlyphSetToFont(int font, const char *fontName, int tall, int weight, int flags)
+bool CEngineSurface :: AddGlyphSetToFont(int font, const char *fontName, int tall, int weight, bool italic, bool underline, bool strikeout, bool symbol)
 {
 	if (font < 0 || font >= staticFontDar.getCount() || staticFontDar[font] != nullptr)
 		return false;
 
-	staticFontDar.setElementAt(new Font(fontName, tall, 0, 0.0f, weight, flags & FONTFLAG_ITALIC, flags & FONTFLAG_UNDERLINE, flags & FONTFLAG_STRIKEOUT, flags & FONTFLAG_SYMBOL), font);
+	staticFontDar.setElementAt(new Font(fontName, tall, 0, 0.0f, weight, italic, underline, strikeout, symbol), font);
 	return true;
 }
 

@@ -1,8 +1,9 @@
+#include "vgui_surf.h" // Must include it before in order to replace IEngineSurface
+
 #include "IBaseUI.h"
 #include "IClientVGUI.h"
 #include "VGui2Interfaces.h"
 #include "Panel.h"
-#include "IEngineSurface.h"
 #include "Cursor.h"
 #include "IChromeHTMLWrapper.h"
 
@@ -533,7 +534,7 @@ vgui2::HFont BaseUISurface::CreateFont()
 
 bool BaseUISurface::AddGlyphSetToFont(vgui2::HFont font, const char *fontName, int tall, int weight, int blur, int scanlines, int flags, int lowRange, int highRange)
 {
-    return engineSurface->AddGlyphSetToFont(font, fontName, tall, weight, flags);
+    return engineSurface->AddGlyphSetToFont(font, fontName, tall, weight, flags & FONTFLAG_ITALIC, flags & FONTFLAG_UNDERLINE, flags & FONTFLAG_STRIKEOUT, flags & FONTFLAG_SYMBOL);
 }
 
 bool BaseUISurface::AddCustomFontFile(const char *fontFileName)
