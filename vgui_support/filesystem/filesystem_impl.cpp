@@ -49,53 +49,53 @@ public:
 	unsigned int Size( const char *pFileName );
 
 	long GetFileTime( const char *pFileName );
-	void FileTimeToString( char* pStrip, int maxCharsIncludingTerminator, long fileTime );
+	void FileTimeToString( char *pStrip, int maxCharsIncludingTerminator, long fileTime );
 
 	bool IsOk( FileHandle_t file );
 
 	void Flush( FileHandle_t file );
 	bool EndOfFile( FileHandle_t file );
 
-	int	  Read( void* pOutput, int size, FileHandle_t file );
-	int	  Write( void const* pInput, int size, FileHandle_t file );
-	char* ReadLine( char *pOutput, int maxChars, FileHandle_t file );
-	int   FPrintf( FileHandle_t file, char *pFormat, ... );
+	int Read( void *pOutput, int size, FileHandle_t file );
+	int Write( void const *pInput, int size, FileHandle_t file );
+	char *ReadLine( char *pOutput, int maxChars, FileHandle_t file );
+	int FPrintf( FileHandle_t file, char *pFormat, ... );
 
-	void* GetReadBuffer( FileHandle_t file, int *outBufferSize, bool failIfNotInCache );
-	void  ReleaseReadBuffer( FileHandle_t file, void *readBuffer );
+	void *GetReadBuffer( FileHandle_t file, int *outBufferSize, bool failIfNotInCache );
+	void ReleaseReadBuffer( FileHandle_t file, void *readBuffer );
 
-	const char* FindFirst( const char *pWildCard, FileFindHandle_t *pHandle, const char *pathIDL );
-	const char* FindNext( FileFindHandle_t handle );
-	bool        FindIsDirectory( FileFindHandle_t handle );
-	void        FindClose( FileFindHandle_t handle );
+	const char *FindFirst( const char *pWildCard, FileFindHandle_t *pHandle, const char *pathIDL );
+	const char *FindNext( FileFindHandle_t handle );
+	bool FindIsDirectory( FileFindHandle_t handle );
+	void FindClose( FileFindHandle_t handle );
 
-	void        GetLocalCopy( const char *pFileName );
+	void GetLocalCopy( const char *pFileName );
 
-	const char* GetLocalPath( const char *pFileName, char *pLocalPath, int localPathBufferSize );
+	const char *GetLocalPath( const char *pFileName, char *pLocalPath, int localPathBufferSize );
 
-	char*       ParseFile( char* pFileBytes, char* pToken, bool* pWasQuoted );
+	char *ParseFile( char *pFileBytes, char *pToken, bool *pWasQuoted );
 
 	bool FullPathToRelativePath( const char *pFullpath, char *pRelative );
 
-	bool GetCurrentDirectory( char* pDirectory, int maxlen );
+	bool GetCurrentDirectory( char *pDirectory, int maxlen );
 
 	void PrintOpenedFiles( void );
 
-	void SetWarningFunc( void (*pfnWarning)( const char *fmt, ... ) );
+	void SetWarningFunc( void ( *pfnWarning )( const char *fmt, ... ) );
 	void SetWarningLevel( FileWarningLevel_t level );
 
 	void LogLevelLoadStarted( const char *name );
 	void LogLevelLoadFinished( const char *name );
 	int HintResourceNeed( const char *hintlist, int forgetEverything );
 	int PauseResourcePreloading( void );
-	int	ResumeResourcePreloading( void );
-	int	SetVBuf( FileHandle_t stream, char *buffer, int mode, long size );
+	int ResumeResourcePreloading( void );
+	int SetVBuf( FileHandle_t stream, char *buffer, int mode, long size );
 	void GetInterfaceVersion( char *p, int maxlen );
-	bool IsFileImmediatelyAvailable(const char *pFileName);
+	bool IsFileImmediatelyAvailable( const char *pFileName );
 
 	WaitForResourcesHandle_t WaitForResources( const char *resourcelist );
 
-	bool GetWaitForResourcesProgress( WaitForResourcesHandle_t handle, float *progress /* out */ , bool *complete /* out */ );
+	bool GetWaitForResourcesProgress( WaitForResourcesHandle_t handle, float *progress /* out */, bool *complete /* out */ );
 
 	void CancelWaitForResources( WaitForResourcesHandle_t handle );
 
@@ -111,7 +111,6 @@ public:
 
 private:
 	bool IsGameDir( const char *pathID );
-
 
 	bool m_bMounted;
 };
@@ -146,19 +145,19 @@ public:
 	{
 		char path[MAX_OSPATH];
 #ifdef __ANDROID__
-		snprintf( path, MAX_OSPATH, "%s/" ENGINE_DLL, getenv("XASH3D_ENGLIBDIR") );
+		snprintf( path, MAX_OSPATH, "%s/" ENGINE_DLL, getenv( "XASH3D_ENGLIBDIR" ) );
 #else
 		snprintf( path, MAX_OSPATH, ENGINE_DLL );
 #endif
 
 		handle = Sys_LoadModule( path );
 
-		if( !handle )
+		if ( !handle )
 			abort();
 
 		pfnFS_GetAPI FS_GetAPI = (pfnFS_GetAPI)Sys_GetProcAddress( handle, "FS_GetAPI" );
 
-		if( !FS_GetAPI )
+		if ( !FS_GetAPI )
 			abort();
 
 		FS_GetAPI( this );
@@ -173,14 +172,14 @@ private:
 	CSysModule *handle;
 } engine;
 
-#define Mem_Free( ptr ) engine._Mem_Free( (ptr), __FILE__, __LINE__ );
+#define Mem_Free( ptr ) engine._Mem_Free( ( ptr ), __FILE__, __LINE__ );
 
 #define STUBCALL( format, ... ) //printf( "FS_Stdio_Xash: called a stub: %s  ->(" format ")\n" , __FUNCSIG__, __VA_ARGS__ );
-#define STUBCALL_VOID			//printf( "FS_Stdio_Xash: called a stub: %s  ->(void)\n", __FUNCSIG__ );
+#define STUBCALL_VOID //printf( "FS_Stdio_Xash: called a stub: %s  ->(void)\n", __FUNCSIG__ );
 
 #ifndef NDEBUG
-#define LOGCALL( format, ... )	//printf( "FS_Stdio_Xash: called %s     ->(" format ")\n" , __FUNCSIG__, __VA_ARGS__ )
-#define LOGCALL_VOID			//printf( "FS_Stdio_Xash: called %s     ->(void)\n", __FUNCSIG__ );
+#define LOGCALL( format, ... ) //printf( "FS_Stdio_Xash: called %s     ->(" format ")\n" , __FUNCSIG__, __VA_ARGS__ )
+#define LOGCALL_VOID //printf( "FS_Stdio_Xash: called %s     ->(void)\n", __FUNCSIG__ );
 
 #define LOGRETVAL( format, ret ) //printf( "FS_Stdio_Xash:             \-> " format "\n", ret );
 #else
@@ -190,19 +189,18 @@ private:
 #endif
 
 #ifdef _WIN32
-	const char CORRECT_PATH_SEPARATOR = '\\';
-	const char INCORRECT_PATH_SEPARATOR = '/';
+const char CORRECT_PATH_SEPARATOR = '\\';
+const char INCORRECT_PATH_SEPARATOR = '/';
 #else
-	const char CORRECT_PATH_SEPARATOR = '/';
-	const char INCORRECT_PATH_SEPARATOR = '\\';
+const char CORRECT_PATH_SEPARATOR = '/';
+const char INCORRECT_PATH_SEPARATOR = '\\';
 #endif
-
 
 static void FixSlashes( char *str )
 {
-	for( ; *str; str++ )
+	for ( ; *str; str++ )
 	{
-		if( *str == INCORRECT_PATH_SEPARATOR )
+		if ( *str == INCORRECT_PATH_SEPARATOR )
 			*str = CORRECT_PATH_SEPARATOR;
 	}
 }
@@ -224,104 +222,104 @@ void CXashFileSystem::RemoveAllSearchPaths( void )
 	STUBCALL_VOID;
 }
 
-void CXashFileSystem::AddSearchPath(const char *pPath, const char *pathID)
+void CXashFileSystem::AddSearchPath( const char *pPath, const char *pathID )
 {
-    LOGCALL( "%s, %s", pPath, pathID );
+	LOGCALL( "%s, %s", pPath, pathID );
 	engine.FS_AddGameDirectory( pPath, FS_CUSTOM_PATH );
 }
 
-bool CXashFileSystem::RemoveSearchPath(const char *pPath)
+bool CXashFileSystem::RemoveSearchPath( const char *pPath )
 {
-	STUBCALL("%s", pPath);
+	STUBCALL( "%s", pPath );
 	return false;
 }
 
-void CXashFileSystem::RemoveFile(const char *pRelativePath, const char *pathID)
+void CXashFileSystem::RemoveFile( const char *pRelativePath, const char *pathID )
 {
 	LOGCALL( "%s, %s", pRelativePath, pathID );
-    engine.FS_Delete( pRelativePath );
+	engine.FS_Delete( pRelativePath );
 }
 
-void CXashFileSystem::CreateDirHierarchy(const char *path, const char *pathID)
+void CXashFileSystem::CreateDirHierarchy( const char *path, const char *pathID )
 {
-	char *pPath = strdup(path);
-	engine.FS_CreatePath(pPath);
+	char *pPath = strdup( path );
+	engine.FS_CreatePath( pPath );
 
-	free(pPath);
+	free( pPath );
 }
 
-bool CXashFileSystem::FileExists(const char *pFileName)
+bool CXashFileSystem::FileExists( const char *pFileName )
 {
 	return engine.FS_FileExists( pFileName, false ) != NULL;
 }
 
-bool CXashFileSystem::IsDirectory(const char *pFileName)
+bool CXashFileSystem::IsDirectory( const char *pFileName )
 {
 	struct stat buf;
-	if( stat( pFileName, &buf ) != -1 )
+	if ( stat( pFileName, &buf ) != -1 )
 		return ( buf.st_mode & S_IFDIR );
 	return false;
 }
 
-FileHandle_t CXashFileSystem::Open(const char *pFileName, const char *pOptions, const char *pathID)
+FileHandle_t CXashFileSystem::Open( const char *pFileName, const char *pOptions, const char *pathID )
 {
 	// SC 5.0 tries to parse this file and for some reason fails.
 	//if( strstr( pFileName, "materials.txt" ) )
 	//	return 0;
 
-	return engine.FS_Open( pFileName, pOptions, IsGameDir( pathID ));
+	return engine.FS_Open( pFileName, pOptions, IsGameDir( pathID ) );
 }
 
 void CXashFileSystem::Close( FileHandle_t file )
 {
-	engine.FS_Close( (file_t*)file );
+	engine.FS_Close( (file_t *)file );
 }
 
 void CXashFileSystem::Seek( FileHandle_t file, int pos, FileSystemSeek_t seekType )
 {
-	engine.FS_Seek( (file_t*)file, pos, seekType );
+	engine.FS_Seek( (file_t *)file, pos, seekType );
 }
 
-unsigned int CXashFileSystem::Tell(FileHandle_t file)
+unsigned int CXashFileSystem::Tell( FileHandle_t file )
 {
-	return engine.FS_Tell( (file_t*)file );
+	return engine.FS_Tell( (file_t *)file );
 }
 
-unsigned int CXashFileSystem::Size(FileHandle_t file)
+unsigned int CXashFileSystem::Size( FileHandle_t file )
 {
-	fs_offset_t orig = engine.FS_Tell((file_t*)file);
+	fs_offset_t orig = engine.FS_Tell( (file_t *)file );
 
-	engine.FS_Seek( (file_t*)file, 0, SEEK_END );
-	fs_offset_t size = engine.FS_Tell( (file_t*)file );
-	engine.FS_Seek( (file_t*)file, orig, SEEK_SET );
+	engine.FS_Seek( (file_t *)file, 0, SEEK_END );
+	fs_offset_t size = engine.FS_Tell( (file_t *)file );
+	engine.FS_Seek( (file_t *)file, orig, SEEK_SET );
 
 	return size;
 }
 
-unsigned int CXashFileSystem::Size(const char *pFileName)
+unsigned int CXashFileSystem::Size( const char *pFileName )
 {
 	return engine.FS_FileSize( pFileName, false );
 }
 
-long CXashFileSystem::GetFileTime(const char *pFileName)
+long CXashFileSystem::GetFileTime( const char *pFileName )
 {
 	return engine.FS_FileTime( pFileName, false );
 }
 
-void CXashFileSystem::FileTimeToString(char *pStrip, int maxCharsIncludingTerminator, long fileTime)
+void CXashFileSystem::FileTimeToString( char *pStrip, int maxCharsIncludingTerminator, long fileTime )
 {
 	time_t tFileTime = fileTime;
-	
+
 	strncpy( pStrip, ctime( &tFileTime ), maxCharsIncludingTerminator );
-	pStrip[maxCharsIncludingTerminator-1] = '\0';
+	pStrip[maxCharsIncludingTerminator - 1] = '\0';
 }
 
-bool CXashFileSystem::IsOk(FileHandle_t file)
+bool CXashFileSystem::IsOk( FileHandle_t file )
 {
-	file_t *nativeFile = (file_t*)file;
-	if( !file )
+	file_t *nativeFile = (file_t *)file;
+	if ( !file )
 	{
-		engine.Msg( "Tried to IsOk NULL");
+		engine.Msg( "Tried to IsOk NULL" );
 		return false;
 	}
 
@@ -330,72 +328,72 @@ bool CXashFileSystem::IsOk(FileHandle_t file)
 	return true;
 }
 
-void CXashFileSystem::Flush(FileHandle_t file)
+void CXashFileSystem::Flush( FileHandle_t file )
 {
 	Seek( file, 0, FILESYSTEM_SEEK_HEAD );
 }
 
-bool CXashFileSystem::EndOfFile(FileHandle_t file)
+bool CXashFileSystem::EndOfFile( FileHandle_t file )
 {
-	return engine.FS_Eof( (file_t*) file );
+	return engine.FS_Eof( (file_t *)file );
 }
 
 int CXashFileSystem::Read( void *pOutput, int size, FileHandle_t file )
 {
-	return engine.FS_Read( (file_t*)file, pOutput, size );
+	return engine.FS_Read( (file_t *)file, pOutput, size );
 }
 
-int CXashFileSystem::Write(const void *pInput, int size, FileHandle_t file)
+int CXashFileSystem::Write( const void *pInput, int size, FileHandle_t file )
 {
-	return engine.FS_Write( (file_t*)file, pInput, size );
+	return engine.FS_Write( (file_t *)file, pInput, size );
 }
 
-char *CXashFileSystem::ReadLine(char *pOutput, int maxChars, FileHandle_t file)
+char *CXashFileSystem::ReadLine( char *pOutput, int maxChars, FileHandle_t file )
 {
-	file_t *nativeFile = (file_t*)file;
+	file_t *nativeFile = (file_t *)file;
 
-	if( engine.FS_Eof( nativeFile ) )
+	if ( engine.FS_Eof( nativeFile ) )
 		return NULL;
 
 	char *p = pOutput;
 	*p = 0;
-	for( int i = 0; i < maxChars; i++ )
+	for ( int i = 0; i < maxChars; i++ )
 	{
 		*p = engine.FS_Getc( nativeFile );
 
-		if( *p == '\n' || *p == -1 )
+		if ( *p == '\n' || *p == -1 )
 			break;
 
 		p++;
 	}
 
-
-	if( p != pOutput && *(p-1) == '\r' )
-		*(p-1) = 0;
-	else *p = 0;
+	if ( p != pOutput && *( p - 1 ) == '\r' )
+		*( p - 1 ) = 0;
+	else
+		*p = 0;
 	return pOutput;
 }
 
-int CXashFileSystem::FPrintf(FileHandle_t file, char *pFormat, ...)
+int CXashFileSystem::FPrintf( FileHandle_t file, char *pFormat, ... )
 {
-	int	result;
-	va_list	args;
+	int result;
+	va_list args;
 
 	va_start( args, pFormat );
-	result = engine.FS_VPrintf( (file_t*)file, pFormat, args );
+	result = engine.FS_VPrintf( (file_t *)file, pFormat, args );
 	va_end( args );
 
 	return result;
 }
 
-void *CXashFileSystem::GetReadBuffer(FileHandle_t file, int *outBufferSize, bool failIfNotInCache)
+void *CXashFileSystem::GetReadBuffer( FileHandle_t file, int *outBufferSize, bool failIfNotInCache )
 {
 	// engine.FS_LoadFile?
 	STUBCALL_VOID;
 	return NULL;
 }
 
-void CXashFileSystem::ReleaseReadBuffer(FileHandle_t file, void *readBuffer)
+void CXashFileSystem::ReleaseReadBuffer( FileHandle_t file, void *readBuffer )
 {
 	// engine.FS_CloseFile?
 	STUBCALL_VOID
@@ -408,16 +406,17 @@ struct findData_t
 	int iter;
 };
 
-const char *CXashFileSystem::FindFirst(const char *pWildCard, FileFindHandle_t *pHandle, const char *pathID)
+const char *CXashFileSystem::FindFirst( const char *pWildCard, FileFindHandle_t *pHandle, const char *pathID )
 {
-	if( !pHandle )
+	if ( !pHandle )
 		return NULL;
 
 	findData_t *ptr = new findData_t;
-	if( pWildCard[0] == '/' ) pWildCard++;
-	ptr->search = engine.FS_Search( pWildCard, false, IsGameDir( pathID) );
+	if ( pWildCard[0] == '/' )
+		pWildCard++;
+	ptr->search = engine.FS_Search( pWildCard, false, IsGameDir( pathID ) );
 
-	if( !ptr->search )
+	if ( !ptr->search )
 	{
 		delete ptr;
 		return NULL;
@@ -428,35 +427,35 @@ const char *CXashFileSystem::FindFirst(const char *pWildCard, FileFindHandle_t *
 	return FindNext( *pHandle );
 }
 
-const char *CXashFileSystem::FindNext(FileFindHandle_t handle)
+const char *CXashFileSystem::FindNext( FileFindHandle_t handle )
 {
 	findData_t *ptr = (findData_t *)handle;
 	return ptr->search->filenames[ptr->iter++];
 }
 
-bool CXashFileSystem::FindIsDirectory(FileFindHandle_t handle)
+bool CXashFileSystem::FindIsDirectory( FileFindHandle_t handle )
 {
 	findData_t *ptr = (findData_t *)handle;
 	return IsDirectory( ptr->search->filenames[ptr->iter] );
 }
 
-void CXashFileSystem::FindClose(FileFindHandle_t handle)
+void CXashFileSystem::FindClose( FileFindHandle_t handle )
 {
 	findData_t *ptr = (findData_t *)handle;
 
-	if( ptr->search )
+	if ( ptr->search )
 		Mem_Free( ptr->search );
 	delete ptr;
 	return;
 }
 
-void CXashFileSystem::GetLocalCopy(const char *pFileName)
+void CXashFileSystem::GetLocalCopy( const char *pFileName )
 {
-	STUBCALL("%s", pFileName );
+	STUBCALL( "%s", pFileName );
 	return;
 }
 
-const char* CXashFileSystem::GetLocalPath(const char *pFileName, char *pLocalPath, int localPathBufferSize)
+const char *CXashFileSystem::GetLocalPath( const char *pFileName, char *pLocalPath, int localPathBufferSize )
 {
 	// Is it an absolute path?
 #ifdef _WIN32
@@ -466,7 +465,7 @@ const char* CXashFileSystem::GetLocalPath(const char *pFileName, char *pLocalPat
 #endif
 	{
 		strncpy( pLocalPath, pFileName, localPathBufferSize );
-		pLocalPath[localPathBufferSize-1] = 0;
+		pLocalPath[localPathBufferSize - 1] = 0;
 
 		FixSlashes( pLocalPath );
 		return pLocalPath;
@@ -474,31 +473,31 @@ const char* CXashFileSystem::GetLocalPath(const char *pFileName, char *pLocalPat
 
 	const char *diskPath = engine.FS_GetDiskPath( pFileName, false );
 
-	if( diskPath )
+	if ( diskPath )
 	{
 		strncpy( pLocalPath, diskPath, localPathBufferSize );
-		pLocalPath[localPathBufferSize-1] = 0;
+		pLocalPath[localPathBufferSize - 1] = 0;
 
 		return pLocalPath;
 	}
 	return NULL;
 }
 
-char *CXashFileSystem::ParseFile(char *pFileBytes, char *pToken, bool *pWasQuoted)
+char *CXashFileSystem::ParseFile( char *pFileBytes, char *pToken, bool *pWasQuoted )
 {
 	STUBCALL_VOID; // nothing safe to read
 	return 0;
 }
 
-bool CXashFileSystem::FullPathToRelativePath(const char *pFullpath, char *pRelative)
+bool CXashFileSystem::FullPathToRelativePath( const char *pFullpath, char *pRelative )
 {
-	STUBCALL("%s, %s", pFullpath, pRelative);
+	STUBCALL( "%s, %s", pFullpath, pRelative );
 	return false;
 }
 
-bool CXashFileSystem::GetCurrentDirectory(char *pDirectory, int maxlen)
+bool CXashFileSystem::GetCurrentDirectory( char *pDirectory, int maxlen )
 {
-	STUBCALL("%s, %i", pDirectory, maxlen);
+	STUBCALL( "%s, %i", pDirectory, maxlen );
 	return false;
 }
 
@@ -507,29 +506,29 @@ void CXashFileSystem::PrintOpenedFiles()
 	STUBCALL_VOID;
 }
 
-void CXashFileSystem::SetWarningFunc(void (*pfnWarning)(const char *, ...))
+void CXashFileSystem::SetWarningFunc( void ( *pfnWarning )( const char *, ... ) )
 {
 	STUBCALL_VOID;
 }
 
-void CXashFileSystem::SetWarningLevel(FileWarningLevel_t level)
+void CXashFileSystem::SetWarningLevel( FileWarningLevel_t level )
 {
-	STUBCALL("%i", level);
+	STUBCALL( "%i", level );
 }
 
-void CXashFileSystem::LogLevelLoadStarted(const char *name)
+void CXashFileSystem::LogLevelLoadStarted( const char *name )
 {
-	STUBCALL("%s", name);
+	STUBCALL( "%s", name );
 }
 
-void CXashFileSystem::LogLevelLoadFinished(const char *name)
+void CXashFileSystem::LogLevelLoadFinished( const char *name )
 {
-	STUBCALL("%s",name);
+	STUBCALL( "%s", name );
 }
 
-int CXashFileSystem::HintResourceNeed(const char *hintlist, int forgetEverything)
+int CXashFileSystem::HintResourceNeed( const char *hintlist, int forgetEverything )
 {
-	STUBCALL("%s, %i", hintlist, forgetEverything );
+	STUBCALL( "%s, %i", hintlist, forgetEverything );
 	return 0;
 }
 
@@ -545,66 +544,65 @@ int CXashFileSystem::ResumeResourcePreloading()
 	return 0;
 }
 
-int CXashFileSystem::SetVBuf(FileHandle_t stream, char *buffer, int mode, long size)
+int CXashFileSystem::SetVBuf( FileHandle_t stream, char *buffer, int mode, long size )
 {
-	STUBCALL("%p", stream);
+	STUBCALL( "%p", stream );
 	return 0;
 }
 
-void CXashFileSystem::GetInterfaceVersion(char *p, int maxlen)
+void CXashFileSystem::GetInterfaceVersion( char *p, int maxlen )
 {
 	*p = 0;
 	strncat( p, "Stdio", maxlen );
 }
 
-bool CXashFileSystem::IsFileImmediatelyAvailable(const char *pFileName)
+bool CXashFileSystem::IsFileImmediatelyAvailable( const char *pFileName )
 {
 	return true; // local, so available immediately
 }
 
-WaitForResourcesHandle_t CXashFileSystem::WaitForResources(const char *resourcelist)
+WaitForResourcesHandle_t CXashFileSystem::WaitForResources( const char *resourcelist )
 {
-	STUBCALL("%s", resourcelist);
+	STUBCALL( "%s", resourcelist );
 	return 0;
 }
 
-bool CXashFileSystem::GetWaitForResourcesProgress(WaitForResourcesHandle_t handle, float *progress, bool *complete)
+bool CXashFileSystem::GetWaitForResourcesProgress( WaitForResourcesHandle_t handle, float *progress, bool *complete )
 {
 	STUBCALL_VOID;
 	return false;
 }
 
-void CXashFileSystem::CancelWaitForResources(WaitForResourcesHandle_t handle)
+void CXashFileSystem::CancelWaitForResources( WaitForResourcesHandle_t handle )
 {
 	STUBCALL_VOID;
 	return;
 }
 
-bool CXashFileSystem::IsAppReadyForOfflinePlay(int appID)
+bool CXashFileSystem::IsAppReadyForOfflinePlay( int appID )
 {
-	STUBCALL("%i", appID);
+	STUBCALL( "%i", appID );
 	return true;
 }
 
-bool CXashFileSystem::AddPackFile(const char *fullpath, const char *pathID)
+bool CXashFileSystem::AddPackFile( const char *fullpath, const char *pathID )
 {
-	STUBCALL("%s, %s", fullpath, pathID );
+	STUBCALL( "%s, %s", fullpath, pathID );
 	return false;
 }
 
-FileHandle_t CXashFileSystem::OpenFromCacheForRead(const char *pFileName, const char *pOptions, const char *pathID)
+FileHandle_t CXashFileSystem::OpenFromCacheForRead( const char *pFileName, const char *pOptions, const char *pathID )
 {
 	LOGCALL( "%s, %s, %s", pFileName, pOptions, pathID );
 	return Open( pFileName, pOptions, pathID );
 }
 
-void CXashFileSystem::AddSearchPathNoWrite(const char *pPath, const char *pathID)
+void CXashFileSystem::AddSearchPathNoWrite( const char *pPath, const char *pathID )
 {
 	engine.FS_AddGameDirectory( pPath, FS_CUSTOM_PATH | FS_NOWRITE_PATH );
 
-	LOGCALL("%s, %s", pPath, pathID);
+	LOGCALL( "%s, %s", pPath, pathID );
 }
-
 
 // =====================================
 // private
@@ -614,11 +612,11 @@ CXashFileSystem::CXashFileSystem()
 	m_bMounted = false;
 }
 
-bool CXashFileSystem::IsGameDir(const char *pathID)
+bool CXashFileSystem::IsGameDir( const char *pathID )
 {
 	bool gamedironly = false;
 
-	if( pathID && (strstr( pathID, "GAME" ) || strstr( pathID, "BASE" )))
+	if ( pathID && ( strstr( pathID, "GAME" ) || strstr( pathID, "BASE" ) ) )
 		gamedironly = true;
 
 	return gamedironly;

@@ -33,15 +33,15 @@ from your version.
 
 #include <assert.h>
 
-#include<VGUI.h>
-#include<VGUI_App.h>
-#include<VGUI_Font.h>
-#include<VGUI_Panel.h>
-#include<VGUI_Cursor.h>
-#include<VGUI_SurfaceBase.h>
-#include<VGUI_InputSignal.h>
-#include<VGUI_MouseCode.h>
-#include<VGUI_KeyCode.h>
+#include <VGUI.h>
+#include <VGUI_App.h>
+#include <VGUI_Font.h>
+#include <VGUI_Panel.h>
+#include <VGUI_Cursor.h>
+#include <VGUI_SurfaceBase.h>
+#include <VGUI_InputSignal.h>
+#include <VGUI_MouseCode.h>
+#include <VGUI_KeyCode.h>
 
 #include "vgui_surf.h"
 
@@ -55,7 +55,7 @@ class CEngineApp : public App
 {
 public:
 	CEngineApp( bool externalMain = true ) : App( externalMain ) { }
-	virtual void main( int argc, char* argv[] ) { } // stub
+	virtual void main( int argc, char *argv[] ) { } // stub
 };
 
 //
@@ -63,9 +63,9 @@ public:
 //
 void *VGui_GetPanel( void );
 void VGui_Paint( void );
-void VGUI_Mouse(VGUI_MouseAction action, int code);
-void VGUI_Key(VGUI_KeyAction action, VGUI_KeyCode code);
-void VGUI_MouseMove(int x, int y);
+void VGUI_Mouse( VGUI_MouseAction action, int code );
+void VGUI_Key( VGUI_KeyAction action, VGUI_KeyCode code );
+void VGUI_MouseMove( int x, int y );
 //
 // vgui_clip.cpp
 //
@@ -73,8 +73,8 @@ void EnableScissor( qboolean enable );
 void SetScissorRect( int left, int top, int right, int bottom );
 qboolean ClipRect( const vpoint_t &inUL, const vpoint_t &inLR, vpoint_t *pOutUL, vpoint_t *pOutLR );
 
-extern CEngineSurface	*surface;
+extern CEngineSurface *surface;
 extern Panel *root;
-}
+} // namespace vgui_support
 using namespace vgui_support;
-#endif//VGUI_MAIN_H
+#endif //VGUI_MAIN_H

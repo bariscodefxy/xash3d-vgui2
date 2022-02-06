@@ -23,71 +23,72 @@ from your version.
 
 */
 
-#define OEMRESOURCE		// for OCR_* cursor junk
+#define OEMRESOURCE // for OCR_* cursor junk
 
 #include "vgui_main.h"
 
-void VGui2_Key(VGUI_KeyAction action, VGUI_KeyCode code);
-void VGui2_Mouse(VGUI_MouseAction action, int code);
-void VGui2_MouseMove(int x, int y);
+void VGui2_Key( VGUI_KeyAction action, VGUI_KeyCode code );
+void VGui2_Mouse( VGUI_MouseAction action, int code );
+void VGui2_MouseMove( int x, int y );
 
-namespace vgui_support {
-void VGUI_Key(VGUI_KeyAction action, VGUI_KeyCode code)
+namespace vgui_support
+{
+void VGUI_Key( VGUI_KeyAction action, VGUI_KeyCode code )
 {
 	App *pApp = App::getInstance();
-	if(!surface)
+	if ( !surface )
 		return;
-	switch( action )
+	switch ( action )
 	{
-		case KA_PRESSED:
-			pApp->internalKeyPressed( (KeyCode) code, surface );
-			break;
-		case KA_RELEASED:
-			pApp->internalKeyReleased( (KeyCode) code, surface );
-			break;
-		case KA_TYPED:
-			pApp->internalKeyTyped( (KeyCode) code, surface );
-			break;
+	case KA_PRESSED:
+		pApp->internalKeyPressed( (KeyCode)code, surface );
+		break;
+	case KA_RELEASED:
+		pApp->internalKeyReleased( (KeyCode)code, surface );
+		break;
+	case KA_TYPED:
+		pApp->internalKeyTyped( (KeyCode)code, surface );
+		break;
 	}
-	VGui2_Key(action, code);
+	VGui2_Key( action, code );
 	//fprintf(stdout,"vgui_support: VGUI key action %d %d\n", action, code);
 	//fflush(stdout);
 }
 
-void VGUI_Mouse(VGUI_MouseAction action, int code)
+void VGUI_Mouse( VGUI_MouseAction action, int code )
 {
 	App *pApp = App::getInstance();
-	if(!surface)
+	if ( !surface )
 		return;
-	switch( action )
+	switch ( action )
 	{
-		case MA_PRESSED:
-			pApp->internalMousePressed( (MouseCode) code, surface );
-			break;
-		case MA_RELEASED:
-			pApp->internalMouseReleased( (MouseCode) code, surface );
-			break;
-		case MA_DOUBLE:
-			pApp->internalMouseDoublePressed( (MouseCode) code, surface );
-			break;
-		case MA_WHEEL:
-			//fprintf(stdout, "vgui_support: VGUI mouse wheeled %d %d\n", action, code);
-			pApp->internalMouseWheeled( code, surface );
-			break;
+	case MA_PRESSED:
+		pApp->internalMousePressed( (MouseCode)code, surface );
+		break;
+	case MA_RELEASED:
+		pApp->internalMouseReleased( (MouseCode)code, surface );
+		break;
+	case MA_DOUBLE:
+		pApp->internalMouseDoublePressed( (MouseCode)code, surface );
+		break;
+	case MA_WHEEL:
+		//fprintf(stdout, "vgui_support: VGUI mouse wheeled %d %d\n", action, code);
+		pApp->internalMouseWheeled( code, surface );
+		break;
 	}
-	VGui2_Mouse(action, code);
-	//fprintf(stdout, "vgui_support: VGUI mouse action %d %d\n", action, code);	
+	VGui2_Mouse( action, code );
+	//fprintf(stdout, "vgui_support: VGUI mouse action %d %d\n", action, code);
 	//fflush(stdout);
 }
 
-void VGUI_MouseMove(int x, int y)
+void VGUI_MouseMove( int x, int y )
 {
 	App *pApp = App::getInstance();
 	//fprintf(stdout, "vgui_support: VGUI mouse move %d %d %p\n", x, y, surface);
 	//fflush(stdout);
-	if(!surface)
+	if ( !surface )
 		return;
 	pApp->internalCursorMoved( x, y, surface );
-	VGui2_MouseMove(x, y);
+	VGui2_MouseMove( x, y );
 }
-}
+} // namespace vgui_support

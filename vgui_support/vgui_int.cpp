@@ -26,26 +26,27 @@ from your version.
 #include "vgui_main.h"
 #include "xash3d_types.h"
 
-void VGui2_Startup(const char *clientlib, IEngineSurface *engineSurface);
+void VGui2_Startup( const char *clientlib, IEngineSurface *engineSurface );
 void VGui2_Shutdown();
 void VGui2_Paint();
-int VGui2_DrawCharacter(int x, int y, int ch, int r, int g, int b, unsigned int font, qboolean additive);
+int VGui2_DrawCharacter( int x, int y, int ch, int r, int g, int b, unsigned int font, qboolean additive );
 qboolean VGui2_NeedMouse();
 qboolean VGui2_NeedKeyboard();
 
-namespace vgui_support {
+namespace vgui_support
+{
 
 vguiapi_t *g_api;
 
-Panel	*rootpanel = NULL;
-CEngineSurface	*surface = NULL;
-CEngineApp          staticApp;
+Panel *rootpanel = NULL;
+CEngineSurface *surface = NULL;
+CEngineApp staticApp;
 
 void VGui_Startup( const char *clientlib, int width, int height )
 {
-	VGui2_Startup(clientlib, (IEngineSurface *)surface);
+	VGui2_Startup( clientlib, (IEngineSurface *)surface );
 
-	if( rootpanel )
+	if ( rootpanel )
 	{
 		rootpanel->setSize( width, height );
 		return;
@@ -56,7 +57,7 @@ void VGui_Startup( const char *clientlib, int width, int height )
 	rootpanel->setPaintBorderEnabled( false );
 	rootpanel->setPaintBackgroundEnabled( false );
 	rootpanel->setVisible( true );
-	rootpanel->setCursor( new Cursor( Cursor::dc_none ));
+	rootpanel->setCursor( new Cursor( Cursor::dc_none ) );
 
 	staticApp.start();
 	staticApp.setMinimumTickMillisInterval( 0 );
@@ -64,17 +65,16 @@ void VGui_Startup( const char *clientlib, int width, int height )
 	surface = new CEngineSurface( rootpanel );
 	rootpanel->setSurfaceBaseTraverse( surface );
 
-
 	//ASSERT( rootpanel->getApp() != NULL );
 	//ASSERT( rootpanel->getSurfaceBase() != NULL );
 
-	g_api->DrawInit ();
+	g_api->DrawInit();
 }
 
 void VGui_Shutdown( void )
 {
 	VGui2_Shutdown();
-	
+
 	staticApp.stop();
 
 	delete rootpanel;
@@ -90,23 +90,24 @@ void VGui_Paint( void )
 
 	//if( cls.state != ca_active || !rootpanel )
 	//	return;
-	if( !g_api->IsInGame() || !rootpanel )
+	if ( !g_api->IsInGame() || !rootpanel )
 		return;
 
 	// setup the base panel to cover the screen
 	Panel *pVPanel = surface->getEmbeddedPanel();
-	if( !pVPanel ) return;
+	if ( !pVPanel )
+		return;
 	//SDL_GetWindowSize(host.hWnd, &w, &h);
 	//host.input_enabled = rootpanel->isVisible();
-	rootpanel->getSize(w, h);
+	rootpanel->getSize( w, h );
 	EnableScissor( true );
 
-	staticApp.externalTick ();
+	staticApp.externalTick();
 
 	pVPanel->setBounds( 0, 0, w, h );
 	pVPanel->repaint();
 
-	// paint everything 
+	// paint everything
 	pVPanel->paintTraverse();
 
 	VGui2_Paint();
@@ -117,13 +118,13 @@ void *VGui_GetPanel( void )
 {
 	return (void *)rootpanel;
 }
-}
+} // namespace vgui_support
 
 #ifdef INTERNAL_VGUI_SUPPORT
 #define InitAPI InitVGUISupportAPI
 #endif
 
-extern "C" EXPORT void InitAPI(vguiapi_t * api)
+extern "C" EXPORT void InitAPI( vguiapi_t *api )
 {
 	g_api = api;
 	g_api->Startup = VGui_Startup;
