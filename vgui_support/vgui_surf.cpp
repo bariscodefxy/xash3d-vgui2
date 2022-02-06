@@ -719,7 +719,7 @@ void CEngineSurface::GetCursorPos( int &x, int &y )
 
 void CEngineSurface::DrawTexturedPolygon( vgui2::VGuiVertex *pVertices, int n )
 {
-	vpoint_t *vertices = (vpoint_t *)malloc( sizeof( vpoint_t ) * n );
+	vpoint_t *vertices = (vpoint_t *)g_api->EngineMalloc( sizeof( vpoint_t ) * n );
 
 	if ( vertices == NULL )
 		return;
@@ -730,5 +730,5 @@ void CEngineSurface::DrawTexturedPolygon( vgui2::VGuiVertex *pVertices, int n )
 	g_api->SetupDrawingImage( _drawColor );
 	g_api->DrawPolygon( vertices, n );
 
-	free( vertices );
+	g_api->EngineFree( vertices );
 }

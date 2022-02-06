@@ -208,6 +208,7 @@ typedef struct  vguiapi_s
 	void	(*MouseMove)( int x, int y );
 
 	// For VGUI2
+	void	(*EngineFree)( void *ptr );
 	enum VGUI_KeyCode (*KeyForBind)( const char *binding );
 	void	(*SetupDrawingTextAdditive)( int *pColor );
 	void	(*UploadTextureFile)( int id, const char *filename );

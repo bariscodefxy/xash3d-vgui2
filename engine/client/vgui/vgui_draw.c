@@ -51,6 +51,11 @@ void GAME_EXPORT *VGUI_EngineMalloc(size_t size)
 	return Z_Malloc( size );
 }
 
+void GAME_EXPORT VGUI_EngineFree( void *ptr )
+{
+	Z_Free( ptr );
+}
+
 qboolean GAME_EXPORT VGUI_IsInGame( void )
 {
 	return cls.state == ca_active && cls.key_dest == key_game;
