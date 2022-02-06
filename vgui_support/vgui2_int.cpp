@@ -1,3 +1,5 @@
+#include "port.h"
+
 #include "vgui_surf.h"
 
 #include "IBaseUI.h"
@@ -15,7 +17,7 @@ void VGui2_Startup(const char *clientlib, IEngineSurface *engineSurface)
     if (clientlib == nullptr)
         return;
 
-    fileSystemModule = Sys_LoadModule("filesystem_stdio");
+    fileSystemModule = Sys_LoadModule("filesystem_stdio." OS_LIB_EXT);
     auto fileSystemFactory = Sys_GetFactory(fileSystemModule);
     fileSystem = (IFileSystem *)fileSystemFactory(FILESYSTEM_INTERFACE_VERSION, nullptr);
 

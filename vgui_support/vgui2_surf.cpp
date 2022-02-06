@@ -1,3 +1,5 @@
+#include "port.h"
+
 #include "vgui_surf.h" // Must include it before in order to replace IEngineSurface
 
 #include "IBaseUI.h"
@@ -913,8 +915,8 @@ void BaseUI::Initialize(CreateInterfaceFn *factories, int count)
     if (initialized)
         return;
 
-    vgui2Module = Sys_LoadModule("vgui2");
-    chromeModule = Sys_LoadModule("chromehtml");
+    vgui2Module = Sys_LoadModule("vgui2." OS_LIB_EXT);
+    chromeModule = Sys_LoadModule("chromehtml." OS_LIB_EXT);
 
     factoryList[numFactories++] = factories[0];
     factoryList[numFactories++] = Sys_GetFactory(vgui2Module);
