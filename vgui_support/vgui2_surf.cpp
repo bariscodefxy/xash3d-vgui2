@@ -563,7 +563,7 @@ void BaseUISurface::SetNotifyIcon( vgui2::VPANEL context, vgui2::HTexture icon, 
 
 void BaseUISurface::PlaySound( const char *fileName )
 {
-	//
+	vgui_support::g_api->PlaySound( fileName );
 }
 
 int BaseUISurface::GetPopupCount()
@@ -751,7 +751,7 @@ void BaseUISurface::SurfaceGetCursorPos( int &x, int &y )
 
 void BaseUISurface::SurfaceSetCursorPos( int x, int y )
 {
-	// engineSurface sucks
+	vgui_support::g_api->SetCursorPos( x, y );
 }
 
 void BaseUISurface::DrawTexturedPolygon( vgui2::VGuiVertex *pVertices, int n )

@@ -71,6 +71,22 @@ void GAME_EXPORT VGUI_GetMousePos( int *_x, int *_y )
 	*_x = x / xscale, *_y = y / yscale;
 }
 
+void GAME_EXPORT VGUI_SetMousePos( int _x, int _y )
+{
+	float xscale = (float)refState.width / (float)clgame.scrInfo.iWidth;
+	float yscale = (float)refState.height / (float)clgame.scrInfo.iHeight;
+	int x, y;
+
+	x = _x * xscale, y = _y * yscale;
+	Platform_SetMousePos( x, y );
+}
+
+void GAME_EXPORT VGUI_PlaySound( const char *szSound )
+{
+	if( !COM_CheckString( szSound )) return;
+	S_StartLocalSound( szSound, VOL_NORM, false );
+}
+
 void VGUI_InitCursors( void )
 {
 	// load up all default cursors
@@ -182,6 +198,8 @@ vguiapi_t vgui =
 	NULL,
 	NULL,
 	VGUI_EngineFree,
+	VGUI_SetMousePos,
+	VGUI_PlaySound,
 	VGUI_KeyForBind,
 	NULL, // VGUI_SetupDrawingTextAdditive
 	NULL, // VGUI_UploadTextureFile

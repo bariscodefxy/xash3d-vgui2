@@ -209,13 +209,15 @@ typedef struct  vguiapi_s
 
 	// For VGUI2
 	void	(*EngineFree)( void *ptr );
+	void	(*SetCursorPos)( int x, int y );
+	void	(*PlaySound)( const char *szSound );
 	enum VGUI_KeyCode (*KeyForBind)( const char *binding );
 	void	(*SetupDrawingTextAdditive)( int *pColor );
 	void	(*UploadTextureFile)( int id, const char *filename );
 	void	(*UploadTextureBGRA)( int id, const char *buffer, int width, int height );
 	void	(*UploadTextureBlockBGRA)( int id, int drawX, int drawY, const byte *rgba, int blockWidth, int blockHeight );
 	void	(*DrawPolygon)( const vpoint_t *vertices, int n );
-	int 	(*DrawCharacter)(int x, int y, int ch, int r, int g, int b, unsigned int font, qboolean additive);
+	int 	(*DrawCharacter)( int x, int y, int ch, int r, int g, int b, unsigned int font, qboolean additive );
 	qboolean	(*NeedKeyboard)( void );
 } vguiapi_t;
 #endif // VGUI_API_H
