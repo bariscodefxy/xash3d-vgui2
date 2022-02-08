@@ -181,6 +181,7 @@ vguiapi_t vgui =
 	NULL,
 	NULL,
 	NULL,
+	VGUI_EngineFree,
 	VGUI_KeyForBind,
 	NULL, // VGUI_SetupDrawingTextAdditive
 	NULL, // VGUI_UploadTextureFile
