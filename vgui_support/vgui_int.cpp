@@ -135,6 +135,9 @@ extern "C" EXPORT void InitAPI( vguiapi_t *api )
 	g_api->MouseMove = VGUI_MouseMove;
 	g_api->Key = VGUI_Key;
 
+#ifdef _WIN32
 	g_api->DrawCharacter = VGui2_DrawCharacter;
+#endif
+
 	g_api->NeedKeyboard = VGui2_NeedKeyboard;
 }
