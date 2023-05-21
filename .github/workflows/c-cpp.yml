@@ -63,8 +63,8 @@ jobs:
     - name: Build engine
       run: bash scripts/gha/build_${{ matrix.targetos }}.sh
 
-    - name: Upload engine (prereleases)
-      run: bash scripts/continious_upload.sh artifacts/*
+#    - name: Upload engine (prereleases)
+#      run: bash scripts/continious_upload.sh artifacts/*
     - name: Upload engine (artifacts)
       uses: actions/upload-artifact@v2
       with:
