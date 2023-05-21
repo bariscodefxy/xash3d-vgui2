@@ -97,6 +97,30 @@ void GAME_EXPORT VGUI_UploadTexture( int id, const char *buffer, int width, int 
 	g_textures[id] = GL_LoadTextureInternal( texName, &r_image, TF_IMAGE );
 }
 
+void GAME_EXPORT VGUI_UploadTextureBGRA( int id, const char *buffer, int width, int height )
+{
+	rgbdata_t	r_image;
+	char	texName[32];
+
+	if( id <= 0 || id >= VGUI_MAX_TEXTURES )
+	{
+		gEngfuncs.Con_DPrintf( S_ERROR "VGUI_UploadTextureBGRA: bad texture %i. Ignored\n", id );
+		return;
+	}
+
+	Q_snprintf( texName, sizeof( texName ), "*vgui%i", id );
+	memset( &r_image, 0, sizeof( r_image ));
+
+	r_image.width = width;
+	r_image.height = height;
+	r_image.type = PF_BGRA_32;
+	r_image.size = r_image.width * r_image.height * 4;
+	r_image.flags = IMAGE_HAS_COLOR|IMAGE_HAS_ALPHA;
+	r_image.buffer = (byte *)buffer;
+
+	g_textures[id] = GL_LoadTextureInternal( texName, &r_image, TF_IMAGE );
+}
+
 /*
 ================
 VGUI_CreateTexture
@@ -137,8 +161,22 @@ void GAME_EXPORT VGUI_UploadTextureBlock( int id, int drawX, int drawY, const by
 		return;
 	}
 
-	//pglTexSubImage2D( GL_TEXTURE_2D, 0, drawX, drawY, blockWidth, blockHeight, GL_RGBA, GL_UNSIGNED_BYTE, rgba );
+	GL_Bind( XASH_TEXTURE0, g_textures[id] );
 	g_iBoundTexture = id;
+	//pglTexSubImage2D( GL_TEXTURE_2D, 0, drawX, drawY, blockWidth, blockHeight, GL_RGBA, GL_UNSIGNED_BYTE, rgba );
+}
+
+void GAME_EXPORT VGUI_UploadTextureBlockBGRA( int id, int drawX, int drawY, const byte *bgra, int blockWidth, int blockHeight )
+{
+	if( id <= 0 || id >= VGUI_MAX_TEXTURES || g_textures[id] == 0 || g_textures[id] == tr.whiteTexture )
+	{
+		gEngfuncs.Con_Reportf( S_ERROR  "VGUI_UploadTextureBlockBGRA: bad texture %i. Ignored\n", id );
+		return;
+	}
+
+	GL_Bind( XASH_TEXTURE0, g_textures[id] );
+	g_iBoundTexture = id;
+	//pglTexSubImage2D( GL_TEXTURE_2D, 0, drawX, drawY, blockWidth, blockHeight, GL_BGRA, GL_UNSIGNED_BYTE, bgra );
 }
 
 void GAME_EXPORT VGUI_SetupDrawingRect( int *pColor )
@@ -147,6 +185,11 @@ void GAME_EXPORT VGUI_SetupDrawingRect( int *pColor )
 }
 
 void GAME_EXPORT VGUI_SetupDrawingText( int *pColor )
+{
+
+}
+
+void GAME_EXPORT VGUI_SetupDrawingTextAdditive( int *pColor )
 {
 
 }
@@ -222,4 +265,22 @@ void GAME_EXPORT VGUI_DrawQuad( const vpoint_t *ul, const vpoint_t *lr )
 	yscale = gpGlobals->height / (float)height;
 
 	ASSERT( ul != NULL && lr != NULL );
+}
+
+void GAME_EXPORT VGUI_UploadTextureFile( int id, const char *filename )
+{
+	g_textures[id] = GL_LoadTexture( filename, NULL, 0, TF_IMAGE );
+}
+
+void GAME_EXPORT VGUI_DrawPolygon( const vpoint_t *vectices, int n )
+{
+	int width, height;
+	float xscale, yscale;
+
+	gEngfuncs.CL_GetScreenInfo( &width, &height );
+
+	xscale = gpGlobals->width / (float)width;
+	yscale = gpGlobals->height / (float)height;
+
+	ASSERT( vectices != NULL );
 }

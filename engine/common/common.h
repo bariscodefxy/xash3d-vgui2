@@ -111,6 +111,10 @@ typedef enum
 #include "cvar.h"
 #include "con_nprint.h"
 #include "crclib.h"
+#include "fs_int.h"
+
+#define XASH_VERSION        "0.20" // engine current version
+#define XASH_COMPAT_VERSION "0.99" // version we are based on
 #include "ref_api.h"
 #include "fscallback.h"
 
@@ -142,6 +146,9 @@ typedef enum
 #define MAX_STATIC_ENTITIES	32	// static entities that moved on the client when level is spawn
 #endif
 
+#define GI		SI.GameInfo
+#define FS_Gamedir()	SI.GameInfo->gamefolder
+#define FS_Title()		SI.GameInfo->title
 #define GameState		(&host.game)
 
 #define FORCE_DRAW_VERSION_TIME 5.0 // draw version for 5 seconds

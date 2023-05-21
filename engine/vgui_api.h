@@ -183,6 +183,7 @@ typedef struct  vguiapi_s
 	void	(*EnableTextInput)( qboolean enable, qboolean force );
 	void	(*GetCursorPos)( int *x, int *y );
 	int		(*ProcessUtfChar)( int ch );
+	void	(*Startup)( const char *clientlib, int width, int height );
 	int		(*GetClipboardText)( char *buffer, size_t bufferSize );
 	void	(*SetClipboardText)( const char *text );
 	key_modifier_t (*GetKeyModifiers)( void );
@@ -194,6 +195,19 @@ typedef struct  vguiapi_s
 	void	(*Mouse)( enum VGUI_MouseAction action, int code );
 	void	(*Key)( enum VGUI_KeyAction action, enum VGUI_KeyCode code );
 	void	(*MouseMove)( int x, int y );
+
+	// For VGUI2
+	void	(*EngineFree)( void *ptr );
+	void	(*SetCursorPos)( int x, int y );
+	void	(*PlaySound)( const char *szSound );
+	enum VGUI_KeyCode (*KeyForBind)( const char *binding );
+	void	(*SetupDrawingTextAdditive)( int *pColor );
+	void	(*UploadTextureFile)( int id, const char *filename );
+	void	(*UploadTextureBGRA)( int id, const char *buffer, int width, int height );
+	void	(*UploadTextureBlockBGRA)( int id, int drawX, int drawY, const byte *rgba, int blockWidth, int blockHeight );
+	void	(*DrawPolygon)( const vpoint_t *vertices, int n );
+	int 	(*DrawCharacter)( int x, int y, int ch, int r, int g, int b, unsigned int font, qboolean additive );
+	qboolean	(*NeedKeyboard)( void );
 	void	(*TextInput)( const char *text );
 } vguiapi_t;
 #endif // VGUI_API_H

@@ -2863,7 +2863,16 @@ pfnVGUI2DrawCharacter
 */
 static int GAME_EXPORT pfnVGUI2DrawCharacter( int x, int y, int number, unsigned int font )
 {
-	return pfnDrawCharacter( x, y, number, 255, 255, 255 );
+	int r, g, b, iWidth;
+
+	r = clgame.ds.textColor[0];
+	g = clgame.ds.textColor[1];
+	b = clgame.ds.textColor[2];
+
+	if ( ( iWidth = VGui_DrawCharacter( x, y, number, r, g, b, font, false ) ) != -1 )
+		return iWidth;
+
+	return pfnDrawCharacter( x, y, number, r, g, b );
 }
 
 /*
@@ -2874,6 +2883,11 @@ pfnVGUI2DrawCharacterAdditive
 */
 static int GAME_EXPORT pfnVGUI2DrawCharacterAdditive( int x, int y, int ch, int r, int g, int b, unsigned int font )
 {
+	int iWidth;
+
+	if ( ( iWidth = VGui_DrawCharacter( x, y, ch, r, g, b, font, true ) ) != -1 )
+		return iWidth;
+
 	return pfnDrawCharacter( x, y, ch, r, g, b );
 }
 
@@ -2887,6 +2901,12 @@ static int GAME_EXPORT pfnDrawString( int x, int y, const char *str, int r, int 
 {
 	rgba_t color = { r, g, b, 255 };
 	int flags = FONT_DRAW_HUD | FONT_DRAW_NOLF;
+
+	// draw the string until we hit the null character or a newline character
+	for ( ; *str != 0 && *str != '\n'; str++ )
+	{
+		iWidth += pfnDrawCharacter( x + iWidth, y, (unsigned char)*str, r, g, b );
+	}
 
 	if( hud_utf8->value )
 		SetBits( flags, FONT_DRAW_UTF8 );
@@ -3899,7 +3919,6 @@ qboolean CL_LoadProgs( const char *name )
 	clgame.mempool = Mem_AllocPool( "Client Edicts Zone" );
 	clgame.entities = NULL;
 
-
 	// a1ba: we need to check if client.dll has direct dependency on SDL2
 	// and if so, disable relative mouse mode
 #if XASH_WIN32 && !XASH_64BIT
@@ -4020,6 +4039,8 @@ qboolean CL_LoadProgs( const char *name )
 		clgame.hInstance = NULL;
 		return false;
 	}
+
+	VGui_Startup( name, gameui.globals->scrWidth, gameui.globals->scrHeight );
 
 	Cvar_FullSet( "host_clientloaded", "1", FCVAR_READ_ONLY );
 

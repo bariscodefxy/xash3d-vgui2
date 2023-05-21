@@ -617,6 +617,13 @@ typedef struct ref_interface_s
 	void	(*VGUI_DrawQuad)( const vpoint_t *ul, const vpoint_t *lr );
 	void	(*VGUI_GetTextureSizes)( int *width, int *height );
 	int		(*VGUI_GenerateTexture)( void );
+
+	// for vgui2
+	void	(*VGUI_SetupDrawingTextAdditive)( int *pColor );
+	void	(*VGUI_UploadTextureFile)( int id, const char *filename );
+	void	(*VGUI_UploadTextureBGRA)( int id, const char *buffer, int width, int height );
+	void	(*VGUI_UploadTextureBlockBGRA)( int id, int drawX, int drawY, const byte *bgra, int blockWidth, int blockHeight );
+	void	(*VGUI_DrawPolygon)( const vpoint_t *vertices, int n );
 } ref_interface_t;
 
 typedef int (*REFAPI)( int version, ref_interface_t *pFunctionTable, ref_api_t* engfuncs, ref_globals_t *pGlobals );

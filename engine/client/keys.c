@@ -699,7 +699,11 @@ void GAME_EXPORT Key_Event( int key, int down )
 		keys[key].gamedown = false;
 		keys[key].repeats = 0;
 	}
+	
+	if ( cls.key_dest == key_game )
+		VGui_KeyEvent( key, down );
 
+	Touch_KeyEvent( key, down );
 	VGui_KeyEvent( key, down );
 
 	// console key is hardcoded, so the user can never unbind it
@@ -725,12 +729,13 @@ void GAME_EXPORT Key_Event( int key, int down )
 				Cvar_SetValue( "r_showtextures", 0.0f );
 				return;
 			}
-			else if( host.mouse_visible && cls.state != ca_cinematic )
+			if( host.mouse_visible && cls.state != ca_cinematic )
 			{
-				clgame.dllFuncs.pfnKey_Event( down, key, keys[key].binding );
-				return; // handled in client.dll
+				if ( !clgame.dllFuncs.pfnKey_Event( down, key, keys[key].binding ) )
+					return; // handled in client.dll
 			}
-			break;
+			Key_AddKeyCommands( key, kb, down );
+			return;
 		case key_message:
 			Key_Message( key );
 			return;
@@ -777,7 +782,8 @@ void GAME_EXPORT Key_Event( int key, int down )
 	// distribute the key down event to the apropriate handler
 	if( cls.key_dest == key_game )
 	{
-		Key_AddKeyCommands( key, kb, down );
+		if ( !VGui_NeedKeyboard() )
+			Key_AddKeyCommands( key, kb, down );
 	}
 	else if( cls.key_dest == key_console )
 	{

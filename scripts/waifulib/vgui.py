@@ -53,7 +53,8 @@ def check_vgui(conf):
 
 	if conf.env.DEST_OS == 'win32':
 		conf.env.LIB_VGUI = ['vgui']
-		conf.env.LIBPATH_VGUI = [os.path.abspath(os.path.join(vgui_dev, 'lib/win32_vc6/'))]
+		conf.env.LIBPATH_VGUI = [os.path.abspath(os.path.join(conf.env.VGUI_DEV, 'lib/win32_vc6/'))]
+		conf.define('_CRT_INTERNAL_NONSTDC_NAMES', 1)
 	else:
 		libpath = os.path.abspath(os.path.join(vgui_dev, 'lib'))
 		if conf.env.DEST_OS == 'linux':
@@ -76,5 +77,58 @@ def check_vgui(conf):
 				execute = False)
 		except conf.errors.ConfigurationError:
 			conf.fatal("Can't compile simple program. Check your path to vgui-dev repository.")
+
+def build_fs(bld):
+	libs = []
+
+	# basic build: dedicated only, no dependencies
+	if bld.env.DEST_OS != 'win32':
+		libs += ['DL','M']
+
+	source = bld.path.ant_glob(['filesystem/*.cpp'])
+	source += bld.path.parent.ant_glob(['vgui2-dev/src/interface.cpp'])
+
+	includes = [ '.', '../vgui2-dev/include', '../common', '../engine', '../public' ]
+
+	bld.shlib(
+		source   = source,
+		target   = 'filesystem_stdio',
+		features = 'cxx',
+		includes = includes,
+		use      = libs,
+		install_path = bld.env.LIBDIR,
+		subsystem = bld.env.MSVC_SUBSYSTEM
+	)
+
+def build_vgui(bld):
+	libs = []
+
+	# basic build: dedicated only, no dependencies
+	if bld.env.DEST_OS != 'win32':
+		libs += ['DL','M']
+
+	libs.append('VGUI')
+
+	source = bld.path.ant_glob(['*.cpp'])
+	source += bld.path.parent.ant_glob(['vgui2-dev/src/*.cpp'])
+
+	includes = [ '.', '../vgui2-dev/include', '../common', '../engine', '../public' ]
+
+	bld.shlib(
+		source   = source,
+		target   = 'vgui_support',
+		features = 'cxx',
+		includes = includes,
+		use      = libs,
+		install_path = bld.env.LIBDIR,
+		subsystem = bld.env.MSVC_SUBSYSTEM
+	)
+
+def build(bld):
+	if bld.env.NO_VGUI:
+		return
+
+	build_fs(bld)
+	build_vgui(bld)
 
 	return True

@@ -31,6 +31,13 @@ void VGui_KeyEvent( int key, int down );
 void VGui_MouseMove( int x, int y );
 qboolean VGui_IsActive( void );
 void *VGui_GetPanel( void );
+int VGui_DrawCharacter( int x, int y, int ch, int r, int g, int b, unsigned int font, qboolean additive );
+qboolean VGui_NeedKeyboard( void );
+#ifdef __cplusplus
+}
+#endif
+#endif//VGUI_DRAW_H
+=======
 void VGui_ReportTextInput( const char *text );
 void VGui_UpdateInternalCursorState( VGUI_DefaultCursor cursorType );
 

@@ -78,6 +78,13 @@ static void GAME_EXPORT *VGUI_EngineMalloc( size_t size )
 	return Z_Malloc( size );
 }
 
+void GAME_EXPORT VGUI_EngineFree( void *ptr )
+{
+	Z_Free( ptr );
+}
+
+qboolean GAME_EXPORT VGUI_IsInGame( void )
+
 static qboolean GAME_EXPORT VGUI_IsInGame( void )
 {
 	return cls.state == ca_active && cls.key_dest == key_game;
@@ -92,6 +99,22 @@ static void GAME_EXPORT VGUI_GetMousePos( int *_x, int *_y )
 	Platform_GetMousePos( &x, &y );
 	*_x = x / xscale;
 	*_y = y / yscale;
+}
+
+void GAME_EXPORT VGUI_SetMousePos( int _x, int _y )
+{
+	float xscale = (float)refState.width / (float)clgame.scrInfo.iWidth;
+	float yscale = (float)refState.height / (float)clgame.scrInfo.iHeight;
+	int x, y;
+
+	x = _x * xscale, y = _y * yscale;
+	Platform_SetMousePos( x, y );
+}
+
+void GAME_EXPORT VGUI_PlaySound( const char *szSound )
+{
+	if( !COM_CheckString( szSound )) return;
+	S_StartLocalSound( szSound, VOL_NORM, false );
 }
 
 static void GAME_EXPORT VGUI_CursorSelect( VGUI_DefaultCursor cursor )
@@ -111,6 +134,55 @@ static int GAME_EXPORT VGUI_UtfProcessChar( int in )
 		return Con_UtfProcessCharForce( in );
 	return in;
 }
+
+enum VGUI_KeyCode VGUI_KeyForBind( const char *binding )
+{
+	enum VGUI_KeyCode VGUI_MapKey( int keyCode );
+	return VGUI_MapKey( Key_GetKey( binding ) );
+}
+
+vguiapi_t vgui =
+{
+	false, // Not initialized yet
+	NULL, // VGUI_DrawInit,
+	NULL, // VGUI_DrawShutdown,
+	NULL, // VGUI_SetupDrawingText,
+	NULL, // VGUI_SetupDrawingRect,
+	NULL, // VGUI_SetupDrawingImage,
+	NULL, // VGUI_BindTexture,
+	NULL, // VGUI_EnableTexture,
+	NULL, // VGUI_CreateTexture,
+	NULL, // VGUI_UploadTexture,
+	NULL, // VGUI_UploadTextureBlock,
+	NULL, // VGUI_DrawQuad,
+	NULL, // VGUI_GetTextureSizes,
+	NULL, // VGUI_GenerateTexture,
+	VGUI_EngineMalloc,
+	VGUI_CursorSelect,
+	VGUI_GetColor,
+	VGUI_IsInGame,
+	NULL,
+	VGUI_GetMousePos,
+	VGUI_UtfProcessChar,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	VGUI_EngineFree,
+	VGUI_SetMousePos,
+	VGUI_PlaySound,
+	VGUI_KeyForBind,
+	NULL, // VGUI_SetupDrawingTextAdditive
+	NULL, // VGUI_UploadTextureFile
+	NULL, // VGUI_UploadTextureBGRA
+	NULL, // VGUI_UploadTextureBlockBGRA
+	NULL, // VGUI_DrawPolygon
+	NULL,
+	NULL,
+};
 
 qboolean VGui_IsActive( void )
 {
@@ -132,6 +204,11 @@ static void VGui_FillAPIFromRef( vguiapi_t *to, const ref_interface_t *from )
 	to->DrawQuad = from->VGUI_DrawQuad;
 	to->GetTextureSizes = from->VGUI_GetTextureSizes;
 	to->GenerateTexture = from->VGUI_GenerateTexture;
+	to->SetupDrawingTextAdditive = from->VGUI_SetupDrawingTextAdditive;
+	to->UploadTextureFile = from->VGUI_UploadTextureFile;
+	to->UploadTextureBGRA = from->VGUI_UploadTextureBGRA;
+	to->UploadTextureBlockBGRA = from->VGUI_UploadTextureBlockBGRA;
+	to->DrawPolygon = from->VGUI_DrawPolygon;
 }
 
 void VGui_RegisterCvars( void )
@@ -173,6 +250,33 @@ qboolean VGui_LoadProgs( HINSTANCE hInstance )
 		}
 	}
 
+	if( height < 480 )
+		height = 480;
+
+	if( width <= 640 )
+		width = 640;
+	else if( width <= 800 )
+		width = 800;
+	else if( width <= 1024 )
+		width = 1024;
+	else if( width <= 1152 )
+		width = 1152;
+	else if( width <= 1280 )
+		width = 1280;
+	else if( width <= 1600 )
+		width = 1600;
+#ifdef XASH_DLL_LOADER
+	else if ( Q_strstr( vguiloader, ".dll" ) )
+		width = 1600;
+#endif
+
+
+	if( vgui.initialized )
+	{
+		//host.mouse_visible = true;
+		vgui.Startup( clientlib, width, height );
+	}
+	else if ( COM_CheckString( clientlib ) )
 	// try legacy API first
 	F = COM_GetProcAddress( hInstance, client ? "InitVGUISupportAPI" : "InitAPI" );
 
@@ -439,6 +543,21 @@ void *GAME_EXPORT VGui_GetPanel( void )
 	if( vgui.dllFuncs.GetPanel )
 		return vgui.dllFuncs.GetPanel();
 	return NULL;
+}
+
+int VGui_DrawCharacter( int x, int y, int ch, int r, int g, int b, unsigned int font, qboolean additive )
+{
+	if ( vgui.DrawCharacter )
+		return vgui.DrawCharacter( x, y, ch, r, g, b, font, additive );
+
+	return -1;
+}
+
+qboolean VGui_NeedKeyboard( void )
+{
+	if ( vgui.NeedKeyboard )
+		return vgui.NeedKeyboard();
+	return false;
 }
 
 void VGui_ReportTextInput( const char *text )
