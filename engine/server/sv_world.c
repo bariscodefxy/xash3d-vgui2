@@ -172,46 +172,6 @@ hull_t *SV_HullForBox( const vec3_t mins, const vec3_t maxs )
 
 /*
 ==================
-SV_HullAutoSelect
-
-select the apropriate hull automatically
-==================
-*/
-hull_t *SV_HullAutoSelect( model_t *model, const vec3_t mins, const vec3_t maxs, const vec3_t size, vec3_t offset )
-{
-	float	curdiff;
-	float	lastdiff = 999;
-	int	i, hullNumber = 0;	// assume we fail
-	vec3_t	clip_size;
-	hull_t	*hull;
-
-	// NOTE: this is not matched with hardcoded values in some cases...
-	for( i = 0; i < MAX_MAP_HULLS; i++ )
-	{
-		VectorSubtract( model->hulls[i].clip_maxs, model->hulls[i].clip_mins, clip_size );
-		curdiff = floor( VectorAvg( size )) - floor( VectorAvg( clip_size ));
-		curdiff = fabs( curdiff );
-
-		if( curdiff < lastdiff )
-		{
-			hullNumber = i;
-			lastdiff = curdiff;
-		}
-	}
-
-	// TraceHull stuff
-	hull = &model->hulls[hullNumber];
-
-	// calculate an offset value to center the origin
-	// NOTE: never get offset of drawing hull
-	if( !hullNumber ) VectorCopy( hull->clip_mins, offset );
-	else VectorSubtract( hull->clip_mins, mins, offset );
-
-	return hull;
-}
-
-/*
-==================
 SV_HullForBsp
 
 forcing to select BSP hull
@@ -871,10 +831,7 @@ void SV_ClipMoveToEntity( edict_t *ent, const vec3_t start, vec3_t mins, vec3_t 
 	qboolean	rotated, transform_bbox;
 	matrix4x4	matrix;
 
-	memset( trace, 0, sizeof( trace_t ));
-	VectorCopy( end, trace->endpos );
-	trace->fraction = 1.0f;
-	trace->allsolid = 1;
+	PM_InitTrace( trace, end );
 
 	model = SV_ModelHandle( ent->v.modelindex );
 
@@ -945,10 +902,7 @@ void SV_ClipMoveToEntity( edict_t *ent, const vec3_t start, vec3_t mins, vec3_t 
 
 		for( i = 0; i < hullcount; i++ )
 		{
-			memset( &trace_hitbox, 0, sizeof( trace_t ));
-			VectorCopy( end, trace_hitbox.endpos );
-			trace_hitbox.fraction = 1.0;
-			trace_hitbox.allsolid = 1;
+			PM_InitTrace( &trace_hitbox, end );
 
 			PM_RecursiveHullCheck( &hull[i], hull[i].firstclipnode, 0.0f, 1.0f, start_l, end_l, (pmtrace_t *)&trace_hitbox );
 
@@ -1114,10 +1068,7 @@ or custom physics implementation
 void SV_CustomClipMoveToEntity( edict_t *ent, const vec3_t start, vec3_t mins, vec3_t maxs, const vec3_t end, trace_t *trace )
 {
 	// initialize custom trace
-	memset( trace, 0, sizeof( trace_t ));
-	VectorCopy( end, trace->endpos );
-	trace->allsolid = true;
-	trace->fraction = 1.0f;
+	PM_InitTrace( trace, end );
 
 	if( svgame.physFuncs.ClipMoveToEntity != NULL )
 	{

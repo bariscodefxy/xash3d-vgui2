@@ -53,27 +53,9 @@ float anglemod( float a )
 	return a;
 }
 
-/*
-=================
-SimpleSpline
-
-NOTE: ripped from hl2 source
-hermite basis function for smooth interpolation
-Similar to Gain() above, but very cheap to call
-value should be between 0 & 1 inclusive
-=================
-*/
-float SimpleSpline( float value )
-{
-	float	valueSquared = value * value;
-
-	// nice little ease-in, ease-out spline-like curve
-	return (3.0f * valueSquared - 2.0f * valueSquared * value);
-}
-
 word FloatToHalf( float v )
 {
-	unsigned int	i = *((unsigned int *)&v);
+	unsigned int	i = FloatAsUint( v );
 	unsigned int	e = (i >> 23) & 0x00ff;
 	unsigned int	m = i & 0x007fffff;
 	unsigned short	h;
@@ -115,7 +97,7 @@ float HalfToFloat( word h )
 		}
 	}
 
-	return *((float *)&f);
+	return UintAsFloat( f );
 }
 
 /*
@@ -203,49 +185,6 @@ int PlaneTypeForNormal( const vec3_t normal )
 
 /*
 =================
-PlanesGetIntersectionPoint
-
-=================
-*/
-qboolean PlanesGetIntersectionPoint( const mplane_t *plane1, const mplane_t *plane2, const mplane_t *plane3, vec3_t out )
-{
-	vec3_t	n1, n2, n3;
-	vec3_t	n1n2, n2n3, n3n1;
-	float	denom;
-
-	VectorNormalize2( plane1->normal, n1 );
-	VectorNormalize2( plane2->normal, n2 );
-	VectorNormalize2( plane3->normal, n3 );
-
-	CrossProduct( n1, n2, n1n2 );
-	CrossProduct( n2, n3, n2n3 );
-	CrossProduct( n3, n1, n3n1 );
-
-	denom = DotProduct( n1, n2n3 );
-	VectorClear( out );
-
-	// check if the denominator is zero (which would mean that no intersection is to be found
-	if( denom == 0.0f )
-	{
-		// no intersection could be found, return <0,0,0>
-		return false;
-	}
-
-	// compute intersection point
-#if 0
-	VectorMAMAM( plane1->dist, n2n3, plane2->dist, n3n1, plane3->dist, n1n2, out );
-#else
-	VectorMA( out, plane1->dist, n2n3, out );
-	VectorMA( out, plane2->dist, n3n1, out );
-	VectorMA( out, plane3->dist, n1n2, out );
-#endif
-	VectorScale( out, ( 1.0f / denom ), out );
-
-	return true;
-}
-
-/*
-=================
 NearestPOW
 =================
 */
@@ -296,9 +235,9 @@ float rsqrt( float number )
 		return 0.0f;
 
 	x = number * 0.5f;
-	i = *(int *)&number;	// evil floating point bit level hacking
+	i = FloatAsInt( number );	// evil floating point bit level hacking
 	i = 0x5f3759df - (i >> 1);	// what the fuck?
-	y = *(float *)&i;
+	y = IntAsFloat( i );
 	y = y * (1.5f - (x * y * y));	// first iteration
 
 	return y;
@@ -765,53 +704,6 @@ void QuaternionSlerp( const vec4_t p, const vec4_t q, float t, vec4_t qt )
 }
 
 /*
-====================
-V_CalcFov
-====================
-*/
-float V_CalcFov( float *fov_x, float width, float height )
-{
-	float	x, half_fov_y;
-
-	if( *fov_x < 1.0f || *fov_x > 179.0f )
-		*fov_x = 90.0f; // default value
-
-	x = width / tan( DEG2RAD( *fov_x ) * 0.5f );
-	half_fov_y = atan( height / x );
-
-	return RAD2DEG( half_fov_y ) * 2;
-}
-
-/*
-====================
-V_AdjustFov
-====================
-*/
-void V_AdjustFov( float *fov_x, float *fov_y, float width, float height, qboolean lock_x )
-{
-	float x, y;
-
-	if( width * 3 == 4 * height || width * 4 == height * 5 )
-	{
-		// 4:3 or 5:4 ratio
-		return;
-	}
-
-	if( lock_x )
-	{
-		*fov_y = 2 * atan((width * 3) / (height * 4) * tan( *fov_y * M_PI_F / 360.0f * 0.5f )) * 360 / M_PI_F;
-		return;
-	}
-
-	y = V_CalcFov( fov_x, 640, 480 );
-	x = *fov_x;
-
-	*fov_x = V_CalcFov( &y, height, width );
-	if( *fov_x < x ) *fov_x = x;
-	else *fov_y = y;
-}
-
-/*
 ==================
 BoxOnPlaneSide
 
@@ -872,3 +764,193 @@ int BoxOnPlaneSide( const vec3_t emins, const vec3_t emaxs, const mplane_t *p )
 	return sides;
 }
 
+/*
+====================
+StudioSlerpBones
+
+====================
+*/
+void R_StudioSlerpBones( int numbones, vec4_t q1[], float pos1[][3], const vec4_t q2[], const float pos2[][3], float s )
+{
+	int	i;
+
+	s = bound( 0.0f, s, 1.0f );
+
+	for( i = 0; i < numbones; i++ )
+	{
+		QuaternionSlerp( q1[i], q2[i], s, q1[i] );
+		VectorLerp( pos1[i], s, pos2[i], pos1[i] );
+	}
+}
+
+/*
+====================
+StudioCalcBoneQuaternion
+
+====================
+*/
+void R_StudioCalcBoneQuaternion( int frame, float s, const mstudiobone_t *pbone, const mstudioanim_t *panim, const float *adj, vec4_t q )
+{
+	vec3_t	angles1;
+	vec3_t	angles2;
+	int	j, k;
+
+	for( j = 0; j < 3; j++ )
+	{
+		if( !panim || panim->offset[j+3] == 0 )
+		{
+			angles2[j] = angles1[j] = pbone->value[j+3]; // default;
+		}
+		else
+		{
+			mstudioanimvalue_t *panimvalue = (mstudioanimvalue_t *)((byte *)panim + panim->offset[j+3]);
+
+			k = frame;
+
+			// debug
+			if( panimvalue->num.total < panimvalue->num.valid )
+				k = 0;
+
+			// find span of values that includes the frame we want
+			while( panimvalue->num.total <= k )
+			{
+				k -= panimvalue->num.total;
+				panimvalue += panimvalue->num.valid + 1;
+
+				// debug
+				if( panimvalue->num.total < panimvalue->num.valid )
+					k = 0;
+			}
+
+			// bah, missing blend!
+			if( panimvalue->num.valid > k )
+			{
+				angles1[j] = panimvalue[k+1].value;
+
+				if( panimvalue->num.valid > k + 1 )
+				{
+					angles2[j] = panimvalue[k+2].value;
+				}
+				else
+				{
+					if( panimvalue->num.total > k + 1 )
+						angles2[j] = angles1[j];
+					else angles2[j] = panimvalue[panimvalue->num.valid+2].value;
+				}
+			}
+			else
+			{
+				angles1[j] = panimvalue[panimvalue->num.valid].value;
+				if( panimvalue->num.total > k + 1 )
+					angles2[j] = angles1[j];
+				else angles2[j] = panimvalue[panimvalue->num.valid+2].value;
+			}
+
+			angles1[j] = pbone->value[j+3] + angles1[j] * pbone->scale[j+3];
+			angles2[j] = pbone->value[j+3] + angles2[j] * pbone->scale[j+3];
+		}
+
+		if( pbone->bonecontroller[j+3] != -1 && adj != NULL )
+		{
+			angles1[j] += adj[pbone->bonecontroller[j+3]];
+			angles2[j] += adj[pbone->bonecontroller[j+3]];
+		}
+	}
+
+	if( !VectorCompare( angles1, angles2 ))
+	{
+		vec4_t	q1, q2;
+
+		AngleQuaternion( angles1, q1, true );
+		AngleQuaternion( angles2, q2, true );
+		QuaternionSlerp( q1, q2, s, q );
+	}
+	else
+	{
+		AngleQuaternion( angles1, q, true );
+	}
+}
+
+/*
+====================
+StudioCalcBonePosition
+
+====================
+*/
+void R_StudioCalcBonePosition( int frame, float s, const mstudiobone_t *pbone, const mstudioanim_t *panim, const float *adj, vec3_t pos )
+{
+	vec3_t	origin1;
+	vec3_t	origin2;
+	int	j, k;
+
+	for( j = 0; j < 3; j++ )
+	{
+		if( !panim || panim->offset[j] == 0 )
+		{
+			origin2[j] = origin1[j] = pbone->value[j]; // default;
+		}
+		else
+		{
+			mstudioanimvalue_t	*panimvalue = (mstudioanimvalue_t *)((byte *)panim + panim->offset[j]);
+
+			k = frame;
+
+			// debug
+			if( panimvalue->num.total < panimvalue->num.valid )
+				k = 0;
+
+			// find span of values that includes the frame we want
+			while( panimvalue->num.total <= k )
+			{
+				k -= panimvalue->num.total;
+				panimvalue += panimvalue->num.valid + 1;
+
+				// debug
+				if( panimvalue->num.total < panimvalue->num.valid )
+					k = 0;
+			}
+
+			// bah, missing blend!
+			if( panimvalue->num.valid > k )
+			{
+				origin1[j] = panimvalue[k+1].value;
+
+				if( panimvalue->num.valid > k + 1 )
+				{
+					origin2[j] = panimvalue[k+2].value;
+				}
+				else
+				{
+					if( panimvalue->num.total > k + 1 )
+						origin2[j] = origin1[j];
+					else origin2[j] = panimvalue[panimvalue->num.valid+2].value;
+				}
+			}
+			else
+			{
+				origin1[j] = panimvalue[panimvalue->num.valid].value;
+				if( panimvalue->num.total > k + 1 )
+					origin2[j] = origin1[j];
+				else origin2[j] = panimvalue[panimvalue->num.valid+2].value;
+			}
+
+			origin1[j] = pbone->value[j] + origin1[j] * pbone->scale[j];
+			origin2[j] = pbone->value[j] + origin2[j] * pbone->scale[j];
+		}
+
+		if( pbone->bonecontroller[j] != -1 && adj != NULL )
+		{
+			origin1[j] += adj[pbone->bonecontroller[j]];
+			origin2[j] += adj[pbone->bonecontroller[j]];
+		}
+	}
+
+	if( !VectorCompare( origin1, origin2 ))
+	{
+		VectorLerp( origin1, s, origin2, pos );
+	}
+	else
+	{
+		VectorCopy( origin1, pos );
+	}
+}

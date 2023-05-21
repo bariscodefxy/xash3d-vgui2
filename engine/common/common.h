@@ -115,6 +115,8 @@ typedef enum
 
 #define XASH_VERSION        "0.20" // engine current version
 #define XASH_COMPAT_VERSION "0.99" // version we are based on
+#include "ref_api.h"
+#include "fscallback.h"
 
 // PERFORMANCE INFO
 #define MIN_FPS         20.0f		// host minimum fps value for maxfps.
@@ -149,7 +151,7 @@ typedef enum
 #define FS_Title()		SI.GameInfo->title
 #define GameState		(&host.game)
 
-#define FORCE_DRAW_VERSION_TIME 5.0f // draw version for 5 seconds
+#define FORCE_DRAW_VERSION_TIME 5.0 // draw version for 5 seconds
 
 #ifdef _DEBUG
 void DBG_AssertFunction( qboolean fExpr, const char* szExpr, const char* szFile, int szLine, const char* szMessage );
@@ -164,12 +166,13 @@ extern convar_t	*scr_download;
 extern convar_t	*cmd_scripting;
 extern convar_t	*sv_maxclients;
 extern convar_t	*cl_allow_levelshots;
-extern convar_t	*vid_displayfrequency;
 extern convar_t	host_developer;
 extern convar_t	*host_limitlocal;
 extern convar_t	*host_framerate;
 extern convar_t	*host_maxfps;
-extern convar_t cl_filterstuffcmd;
+extern convar_t	sys_timescale;
+extern convar_t	cl_filterstuffcmd;
+extern convar_t	rcon_password;
 
 /*
 ==============================================================
@@ -186,61 +189,6 @@ GAMEINFO stuff
 internal shared gameinfo structure (readonly for engine parts)
 ========================================================================
 */
-typedef struct gameinfo_s
-{
-	// filesystem info
-	char		gamefolder[MAX_QPATH];	// used for change game '-game x'
-	char		basedir[MAX_QPATH];	// base game directory (like 'id1' for Quake or 'valve' for Half-Life)
-	char		falldir[MAX_QPATH];	// used as second basedir
-	char		startmap[MAX_QPATH];// map to start singleplayer game
-	char		trainmap[MAX_QPATH];// map to start hazard course (if specified)
-	char		title[64];	// Game Main Title
-	float		version;		// game version (optional)
-
-	// .dll pathes
-	char		dll_path[MAX_QPATH];	// e.g. "bin" or "cl_dlls"
-	char		game_dll[MAX_QPATH];	// custom path for game.dll
-
-	// .ico path
-	char		iconpath[MAX_QPATH];	// "game.ico" by default
-
-	// about mod info
-	string		game_url;		// link to a developer's site
-	string		update_url;	// link to updates page
-	char		type[MAX_QPATH];	// single, toolkit, multiplayer etc
-	char		date[MAX_QPATH];
-	size_t		size;
-
-	int		gamemode;
-	qboolean		secure;		// prevent to console acess
-	qboolean		nomodels;		// don't let player to choose model (use player.mdl always)
-	qboolean		noskills;		// disable skill menu selection
-	qboolean		render_picbutton_text; // use font renderer to render WON buttons
-
-	char		sp_entity[32];	// e.g. info_player_start
-	char		mp_entity[32];	// e.g. info_player_deathmatch
-	char		mp_filter[32];	// filtering multiplayer-maps
-
-	char		ambientsound[NUM_AMBIENTS][MAX_QPATH];	// quake ambient sounds
-
-	int		max_edicts;	// min edicts is 600, max edicts is 8196
-	int		max_tents;	// min temp ents is 300, max is 2048
-	int		max_beams;	// min beams is 64, max beams is 512
-	int		max_particles;	// min particles is 4096, max particles is 32768
-
-	char		game_dll_linux[64];	// custom path for game.dll
-	char		game_dll_osx[64];	// custom path for game.dll
-
-	qboolean	added;
-} gameinfo_t;
-
-typedef enum
-{
-	GAME_NORMAL,
-	GAME_SINGLEPLAYER_ONLY,
-	GAME_MULTIPLAYER_ONLY
-} gametype_t;
-
 typedef struct sysinfo_s
 {
 	string		exeName;		// exe.filename
@@ -248,9 +196,6 @@ typedef struct sysinfo_s
 	string		basedirName;	// name of base directory
 	string		gamedll;
 	string		clientlib;
-	gameinfo_t	*GameInfo;	// current GameInfo
-	gameinfo_t	*games[MAX_MODS];	// environment games (founded at each engine start)
-	int		numgames;
 } sysinfo_t;
 
 typedef enum
@@ -369,6 +314,16 @@ typedef struct
 	float		scale;		// curstate.scale
 } tentlist_t;
 
+typedef enum bugcomp_e
+{
+	// default mode, we assume that user dlls are not relying on engine bugs
+	BUGCOMP_OFF,
+
+	// GoldSrc mode, user dlls are relying on GoldSrc specific bugs
+	// but fixing them may break regular Xash games
+	BUGCOMP_GOLDSRC,
+} bugcomp_t;
+
 typedef struct host_parm_s
 {
 	HINSTANCE			hInst;
@@ -410,14 +365,12 @@ typedef struct host_parm_s
 	qboolean		allow_cheats;	// this host will allow cheating
 	qboolean		con_showalways;	// show console always (developer and dedicated)
 	qboolean		change_game;	// initialize when game is changed
-	qboolean		mouse_visible;	// vgui override cursor control
+	qboolean		mouse_visible;	// vgui override cursor control (never change outside Platform_SetCursorType!)
 	qboolean		shutdown_issued;	// engine is shutting down
-	qboolean		force_draw_version;	// used when fraps is loaded
-	float			force_draw_version_time;
+	double			force_draw_version_time;
 	qboolean		apply_game_config;	// when true apply only to game cvars and ignore all other commands
 	qboolean		apply_opengl_config;// when true apply only to opengl cvars and ignore all other commands
 	qboolean		config_executed;	// a bit who indicated was config.cfg already executed e.g. from valve.rc
-	int		sv_cvars_restored;	// count of restored server cvars
 	qboolean		crashed;		// set to true if crashed
 	qboolean		daemonized;
 	qboolean		enabledll;
@@ -443,6 +396,14 @@ typedef struct host_parm_s
 	struct decallist_s	*decalList;	// used for keep decals, when renderer is restarted or changed
 	int		numdecals;
 
+	// bug compatibility level, for very "special" games
+	bugcomp_t bugcomp;
+
+	// measure time to first frame
+	double starttime;
+
+	// count of sleeps can be inserted between frames
+	double pureframetime;
 } host_parm_t;
 
 extern host_parm_t	host;
@@ -458,11 +419,19 @@ extern sysinfo_t	SI;
 typedef void (*xcommand_t)( void );
 
 //
+// filesystem_engine.c
+//
+qboolean FS_LoadProgs( void );
+void FS_Init( void );
+void FS_Shutdown( void );
+
+//
 // cmd.c
 //
 void Cbuf_Init( void );
 void Cbuf_Clear( void );
 void Cbuf_AddText( const char *text );
+void Cbuf_AddTextf( const char *text, ... ) _format( 1 );
 void Cbuf_AddFilteredText( const char *text );
 void Cbuf_InsertText( const char *text );
 void Cbuf_ExecStuffCmds( void );
@@ -515,56 +484,6 @@ void Mem_PrintStats( void );
 #define Mem_EmptyPool( pool ) _Mem_EmptyPool( pool, __FILE__, __LINE__ )
 #define Mem_IsAllocated( mem ) Mem_IsAllocatedExt( NULL, mem )
 #define Mem_Check() _Mem_Check( __FILE__, __LINE__ )
-
-//
-// filesystem.c
-//
-void FS_Init( void );
-void FS_Path( void );
-void FS_Rescan( void );
-void FS_Shutdown( void );
-void FS_ClearSearchPath( void );
-void FS_AllowDirectPaths( qboolean enable );
-void FS_AddGameDirectory( const char *dir, uint flags );
-void FS_AddGameHierarchy( const char *dir, uint flags );
-void FS_LoadGameInfo( const char *rootfolder );
-const char *FS_GetDiskPath( const char *name, qboolean gamedironly );
-byte *W_LoadLump( wfile_t *wad, const char *lumpname, size_t *lumpsizeptr, const char type );
-void W_Close( wfile_t *wad );
-byte *FS_LoadFile( const char *path, fs_offset_t *filesizeptr, qboolean gamedironly );
-qboolean CRC32_File( dword *crcvalue, const char *filename );
-qboolean MD5_HashFile( byte digest[16], const char *pszFileName, uint seed[4] );
-byte *FS_LoadDirectFile( const char *path, fs_offset_t *filesizeptr );
-qboolean FS_WriteFile( const char *filename, const void *data, fs_offset_t len );
-qboolean COM_ParseVector( char **pfile, float *v, size_t size );
-void COM_NormalizeAngles( vec3_t angles );
-int COM_FileSize( const char *filename );
-void COM_FixSlashes( char *pname );
-void COM_FreeFile( void *buffer );
-int COM_CompareFileTime( const char *filename1, const char *filename2, int *iCompare );
-search_t *FS_Search( const char *pattern, int caseinsensitive, int gamedironly );
-file_t *FS_Open( const char *filepath, const char *mode, qboolean gamedironly );
-fs_offset_t FS_Write( file_t *file, const void *data, size_t datasize );
-fs_offset_t FS_Read( file_t *file, void *buffer, size_t buffersize );
-int FS_VPrintf( file_t *file, const char *format, va_list ap );
-int FS_Seek( file_t *file, fs_offset_t offset, int whence );
-int FS_Gets( file_t *file, byte *string, size_t bufsize );
-int FS_Printf( file_t *file, const char *format, ... ) _format( 2 );
-fs_offset_t FS_FileSize( const char *filename, qboolean gamedironly );
-int FS_FileTime( const char *filename, qboolean gamedironly );
-int FS_Print( file_t *file, const char *msg );
-qboolean FS_Rename( const char *oldname, const char *newname );
-int FS_FileExists( const char *filename, int gamedironly );
-int FS_SetCurrentDirectory( const char *path );
-qboolean FS_SysFileExists( const char *path, qboolean casesensitive );
-qboolean FS_FileCopy( file_t *pOutput, file_t *pInput, int fileSize );
-qboolean FS_Delete( const char *path );
-int FS_UnGetc( file_t *file, byte c );
-fs_offset_t FS_Tell( file_t *file );
-qboolean FS_Eof( file_t *file );
-int FS_Close( file_t *file );
-int FS_Getc( file_t *file );
-fs_offset_t FS_FileLength( file_t *f );
 
 //
 // imagelib
@@ -653,16 +572,7 @@ int FS_GetStreamPos( stream_t *stream );
 void FS_FreeStream( stream_t *stream );
 qboolean Sound_Process( wavdata_t **wav, int rate, int width, uint flags );
 uint Sound_GetApproxWavePlayLen( const char *filepath );
-
-//
-// build.c
-//
-int Q_buildnum( void );
-int Q_buildnum_compat( void );
-const char *Q_buildos( void );
-const char *Q_buildarch( void );
-const char *Q_buildcommit( void );
-
+qboolean Sound_SupportedFileFormat( const char *fileext );
 
 //
 // host.c
@@ -675,7 +585,7 @@ int EXPORT Host_Main( int argc, char **argv, const char *progname, int bChangeGa
 int Host_CompareFileTime( int ft1, int ft2 );
 void Host_NewInstance( const char *name, const char *finalmsg );
 void Host_EndGame( qboolean abort, const char *message, ... ) _format( 2 );
-void Host_AbortCurrentFrame( void );
+void Host_AbortCurrentFrame( void ) NORETURN;
 void Host_WriteServerConfig( const char *name );
 void Host_WriteOpenGLConfig( void );
 void Host_WriteVideoConfig( void );
@@ -734,13 +644,13 @@ void COM_HexConvert( const char *pszInput, int nInputLength, byte *pOutput );
 int COM_SaveFile( const char *filename, const void *data, int len );
 byte* COM_LoadFileForMe( const char *filename, int *pLength );
 qboolean COM_IsSafeFileToDownload( const char *filename );
+const char *COM_GetResourceTypeName( resourcetype_t restype );
 cvar_t *pfnCVarGetPointer( const char *szVarName );
 int pfnDrawConsoleString( int x, int y, char *string );
 void pfnDrawSetTextColor( float r, float g, float b );
 void pfnDrawConsoleStringLen( const char *pText, int *length, int *height );
 void *Cache_Check( poolhandle_t mempool, struct cache_user_s *c );
 void COM_TrimSpace( const char *source, char *dest );
-edict_t* pfnPEntityOfEntIndex( int iEntIndex );
 void pfnGetModelBounds( model_t *mod, float *mins, float *maxs );
 void pfnCVarDirectSet( cvar_t *var, const char *szValue );
 int COM_CheckParm( char *parm, char **ppnext );
@@ -842,7 +752,6 @@ char *CL_Userinfo( void );
 void CL_LegacyUpdateInfo( void );
 void CL_CharEvent( int key );
 qboolean CL_DisableVisibility( void );
-int CL_PointContents( const vec3_t point );
 byte *COM_LoadFile( const char *filename, int usehunk, int *pLength );
 int CL_GetDemoComment( const char *demoname, char *comment );
 void COM_AddAppDirectoryToSearchPath( const char *pszBaseDir, const char *appName );
@@ -851,7 +760,6 @@ struct cmd_s *Cmd_GetFirstFunctionHandle( void );
 struct cmd_s *Cmd_GetNextFunctionHandle( struct cmd_s *cmd );
 struct cmdalias_s *Cmd_AliasGetList( void );
 const char *Cmd_GetName( struct cmd_s *cmd );
-struct pmtrace_s *PM_TraceLine( float *start, float *end, int flags, int usehull, int ignore_pe );
 void SV_StartSound( edict_t *ent, int chan, const char *sample, float vol, float attn, int flags, int pitch );
 void SV_StartMusic( const char *curtrack, const char *looptrack, int position );
 void SV_CreateDecal( sizebuf_t *msg, const float *origin, int decalIndex, int entityIndex, int modelIndex, int flags, float scale );
@@ -864,7 +772,6 @@ void R_ClearAllDecals( void );
 void CL_ClearStaticEntities( void );
 qboolean S_StreamGetCurrentState( char *currentTrack, char *loopTrack, int *position );
 struct cl_entity_s *CL_GetEntityByIndex( int index );
-struct player_info_s *CL_GetPlayerInfo( int playerIndex );
 void CL_ServerCommand( qboolean reliable, const char *fmt, ... ) _format( 2 );
 void CL_HudMessage( const char *pMessage );
 const char *CL_MsgInfo( int cmd );
@@ -879,8 +786,6 @@ int SV_GetMaxClients( void );
 qboolean CL_IsRecordDemo( void );
 qboolean CL_IsTimeDemo( void );
 qboolean CL_IsPlaybackDemo( void );
-qboolean CL_IsBackgroundDemo( void );
-qboolean CL_IsBackgroundMap( void );
 qboolean SV_Initialized( void );
 qboolean CL_LoadProgs( const char *name );
 void CL_ProcessFile( qboolean successfully_received, const char *filename );
@@ -920,6 +825,7 @@ const char *Info_ValueForKey( const char *s, const char *key );
 void Info_RemovePrefixedKeys( char *start, char prefix );
 qboolean Info_RemoveKey( char *s, const char *key );
 qboolean Info_SetValueForKey( char *s, const char *key, const char *value, int maxsize );
+qboolean Info_SetValueForKeyf( char *s, const char *key, int maxsize, const char *format, ... ) _format( 4 );
 qboolean Info_SetValueForStarKey( char *s, const char *key, const char *value, int maxsize );
 qboolean Info_IsValid( const char *s );
 void Info_WriteVars( file_t *f );
@@ -940,6 +846,12 @@ void UI_SetActiveMenu( qboolean fActive );
 void UI_ShowConnectionWarning( void );
 void Cmd_Null_f( void );
 void Rcon_Print( const char *pMsg );
+qboolean COM_ParseVector( char **pfile, float *v, size_t size );
+void COM_NormalizeAngles( vec3_t angles );
+int COM_FileSize( const char *filename );
+void COM_FreeFile( void *buffer );
+int COM_CompareFileTime( const char *filename1, const char *filename2, int *iCompare );
+char *va( const char *format, ... ) _format( 1 );
 
 // soundlib shared exports
 qboolean S_Init( void );
@@ -952,7 +864,6 @@ void S_StopAllSounds( qboolean ambient );
 // gamma routines
 void BuildGammaTable( float gamma, float brightness );
 byte LightToTexGamma( byte b );
-byte TextureToGamma( byte b );
 
 //
 // identification.c
@@ -967,6 +878,11 @@ void GAME_EXPORT ID_SetCustomClientID( const char *id );
 void NET_InitMasters( void );
 void NET_SaveMasters( void );
 qboolean NET_SendToMasters( netsrc_t sock, size_t len, const void *data );
+qboolean NET_IsMasterAdr( netadr_t adr );
+void NET_MasterHeartbeat( void );
+void NET_MasterClear( void );
+void NET_MasterShutdown( void );
+qboolean NET_GetMaster( netadr_t from, uint *challenge, double *last_heartbeat );
 
 #ifdef REF_DLL
 #error "common.h in ref_dll"

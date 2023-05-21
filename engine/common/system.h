@@ -30,9 +30,9 @@ extern "C" {
 #include "crtlib.h"
 #include "platform/platform.h"
 
-#define MSGBOX( x )	Platform_MessageBox( "Xash Error", (x), false );
-#define MSGBOX2( x )	Platform_MessageBox( "Host Error", (x), true );
-#define MSGBOX3( x )	Platform_MessageBox( "Host Recursive Error", (x), true );
+#define MSGBOX( x )	Platform_MessageBox( "Xash Error", (x), false )
+#define MSGBOX2( x )	Platform_MessageBox( "Host Error", (x), true )
+#define MSGBOX3( x )	Platform_MessageBox( "Host Recursive Error", (x), true )
 #define ASSERT( exp )	if(!( exp )) Sys_Error( "assert failed at %s:%i\n", __FILE__, __LINE__ )
 
 /*
@@ -59,7 +59,7 @@ void Sys_ParseCommandLine( int argc, char **argv );
 void Sys_MergeCommandLine( void );
 void Sys_SetupCrashHandler( void );
 void Sys_RestoreCrashHandler( void );
-void Sys_SetClipboardData( const char *buffer, size_t size );
+void Sys_DebugBreak( void );
 #define Sys_GetParmFromCmdLine( parm, out ) _Sys_GetParmFromCmdLine( parm, out, sizeof( out ))
 qboolean _Sys_GetParmFromCmdLine( const char *parm, char *out, size_t size );
 qboolean Sys_GetIntFromCmdLine( const char *parm, int *out );
@@ -69,6 +69,7 @@ void Sys_PrintLog( const char *pMsg );
 void Sys_InitLog( void );
 void Sys_CloseLog( void );
 void Sys_Quit( void ) NORETURN;
+qboolean Sys_NewInstance( const char *gamedir );
 
 //
 // sys_con.c
@@ -89,10 +90,9 @@ void Wcon_ShowConsole( qboolean show );
 void Wcon_CreateConsole( void );
 void Wcon_DestroyConsole( void );
 void Wcon_DisableInput( void );
-void Wcon_Clear( void );
 char *Wcon_Input( void );
 void Wcon_WinPrint( const char *pMsg );
-void Wcon_RegisterHotkeys( void );
+void Wcon_SetStatus( const char *pStatus );
 #endif
 
 // text messages

@@ -17,7 +17,6 @@ GNU General Public License for more details.
 #include "protocol.h"
 #include "net_buffer.h"
 #include "xash3d_mathlib.h"
-
 //#define DEBUG_NET_MESSAGES_SEND
 //#define DEBUG_NET_MESSAGES_READ
 
@@ -26,11 +25,69 @@ GNU General Public License for more details.
 // gives a 33% speedup in WriteUBitLong.
 static dword	BitWriteMasks[32][33];
 static dword	ExtraMasks[32];
-
-unsigned short MSG_BigShort( unsigned short swap )
+const char *svc_strings[svc_lastmsg+1] =
 {
-	return (swap >> 8)|(swap << 8);
-}
+	"svc_bad",
+	"svc_nop",
+	"svc_disconnect",
+	"svc_event",
+	"svc_changing",
+	"svc_setview",
+	"svc_sound",
+	"svc_time",
+	"svc_print",
+	"svc_stufftext",
+	"svc_setangle",
+	"svc_serverdata",
+	"svc_lightstyle",
+	"svc_updateuserinfo",
+	"svc_deltatable",
+	"svc_clientdata",
+	"svc_resource",
+	"svc_pings",
+	"svc_particle",
+	"svc_restoresound",
+	"svc_spawnstatic",
+	"svc_event_reliable",
+	"svc_spawnbaseline",
+	"svc_temp_entity",
+	"svc_setpause",
+	"svc_signonnum",
+	"svc_centerprint",
+	"svc_unused27",
+	"svc_unused28",
+	"svc_unused29",
+	"svc_intermission",
+	"svc_finale",
+	"svc_cdtrack",
+	"svc_restore",
+	"svc_cutscene",
+	"svc_weaponanim",
+	"svc_bspdecal",
+	"svc_roomtype",
+	"svc_addangle",
+	"svc_usermessage",
+	"svc_packetentities",
+	"svc_deltapacketentities",
+	"svc_choke",
+	"svc_resourcelist",
+	"svc_deltamovevars",
+	"svc_resourcerequest",
+	"svc_customization",
+	"svc_crosshairangle",
+	"svc_soundfade",
+	"svc_filetxferfailed",
+	"svc_hltv",
+	"svc_director",
+	"svc_voiceinit",
+	"svc_voicedata",
+	"svc_deltapacketbones",
+	"svc_unused55",
+	"svc_resourcelocation",
+	"svc_querycvarvalue",
+	"svc_querycvarvalue2",
+	"svc_exec",
+};
 
 void MSG_InitMasks( void )
 {
@@ -302,17 +359,6 @@ void MSG_WriteVec3Angles( sizebuf_t *sb, const float *fa )
 	MSG_WriteBitAngle( sb, fa[2], 16 );
 }
 
-void MSG_WriteBitFloat( sizebuf_t *sb, float val )
-{
-	int	intVal;
-
-	Assert( sizeof( int ) == sizeof( float ));
-	Assert( sizeof( float ) == 4 );
-
-	intVal = *((int *)&val );
-	MSG_WriteUBitLong( sb, intVal, 32 );
-}
-
 void MSG_WriteCmdExt( sizebuf_t *sb, int cmd, netsrc_t type, const char *name )
 {
 #ifdef DEBUG_NET_MESSAGES_SEND
@@ -395,6 +441,18 @@ qboolean MSG_WriteString( sizebuf_t *sb, const char *pStr )
 	return !sb->bOverflow;
 }
 
+qboolean MSG_WriteStringf( sizebuf_t *sb, const char *format, ... )
+{
+	va_list va;
+	char buf[MAX_VA_STRING];
+
+	va_start( va, format );
+	Q_vsnprintf( buf, sizeof( buf ), format, va );
+	va_end( va );
+
+	return MSG_WriteString( sb, buf );
+}
+
 int MSG_ReadOneBit( sizebuf_t *sb )
 {
 	if( !MSG_Overflow( sb, 1 ))
@@ -452,32 +510,6 @@ uint MSG_ReadUBitLong( sizebuf_t *sb, int numbits )
 		ret |= (dword2 << ( numbits - nExtraBits ));
 	}
 	return ret;
-}
-
-float MSG_ReadBitFloat( sizebuf_t *sb )
-{
-	int	val;
-	int	bit, byte;
-
-	Assert( sizeof( float ) == sizeof( int ));
-	Assert( sizeof( float ) == 4 );
-
-	if( MSG_Overflow( sb, 32 ))
-		return 0.0f;
-
-	bit = sb->iCurBit & 0x7;
-	byte = sb->iCurBit >> 3;
-
-	val = sb->pData[byte] >> bit;
-	val |= ((int)sb->pData[byte + 1]) << ( 8 - bit );
-	val |= ((int)sb->pData[byte + 2]) << ( 16 - bit );
-	val |= ((int)sb->pData[byte + 3]) << ( 24 - bit );
-
-	if( bit != 0 )
-		val |= ((int)sb->pData[byte + 4]) << ( 32 - bit );
-	sb->iCurBit += 32;
-
-	return *((float *)&val);
 }
 
 qboolean MSG_ReadBits( sizebuf_t *sb, void *pOutData, int nBits )

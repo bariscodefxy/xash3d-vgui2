@@ -30,13 +30,17 @@ compiler_optimizations.CFLAGS['gottagofast'] = {
 }
 '''
 
-VALID_BUILD_TYPES = ['fastnative', 'fast', 'release', 'debug', 'sanitize', 'none']
+VALID_BUILD_TYPES = ['fastnative', 'fast', 'release', 'debug', 'sanitize', 'msan', 'none']
 
 LINKFLAGS = {
 	'common': {
 		'msvc':  ['/DEBUG'], # always create PDB, doesn't affect result binaries
 		'gcc':   ['-Wl,--no-undefined'],
 		'owcc':  ['-Wl,option stack=512k']
+	},
+	'msan': {
+		'clang': ['-fsanitize=memory', '-pthread'],
+		'default': ['NO_MSAN_HERE']
 	},
 	'sanitize': {
 		'clang': ['-fsanitize=undefined', '-fsanitize=address', '-pthread'],
@@ -51,7 +55,7 @@ LINKFLAGS = {
 CFLAGS = {
 	'common': {
 		# disable thread-safe local static initialization for C++11 code, as it cause crashes on Windows XP
-		'msvc':    ['/D_USING_V110_SDK71_', '/FS', '/Zc:threadSafeInit-', '/MT'],
+		'msvc':    ['/D_USING_V110_SDK71_', '/FS', '/Zc:threadSafeInit-', '/MT', '/MP', '/Zc:__cplusplus'],
 		'clang':   ['-g', '-gdwarf-2', '-fvisibility=hidden', '-fno-threadsafe-statics'],
 		'gcc':     ['-g', '-fvisibility=hidden'],
 		'owcc':	   ['-fno-short-enum', '-ffloat-store', '-g3']
@@ -60,26 +64,31 @@ CFLAGS = {
 		'msvc':    ['/O2', '/Oy', '/Zi'],
 		'gcc': {
 			'3':       ['-O3', '-fomit-frame-pointer'],
-			'default': ['-Ofast', '-funsafe-math-optimizations', '-funsafe-loop-optimizations', '-fomit-frame-pointer']
+			'default': ['-Ofast', '-funsafe-math-optimizations', '-funsafe-loop-optimizations', '-fomit-frame-pointer', '-fno-semantic-interposition']
 		},
 		'clang':   ['-Ofast'],
 		'default': ['-O3']
 	},
 	'fastnative': {
 		'msvc':    ['/O2', '/Oy', '/Zi'],
-		'gcc':     ['-Ofast', '-march=native', '-funsafe-math-optimizations', '-funsafe-loop-optimizations', '-fomit-frame-pointer'],
+		'gcc':     ['-Ofast', '-march=native', '-funsafe-math-optimizations', '-funsafe-loop-optimizations', '-fomit-frame-pointer', '-fno-semantic-interposition'],
 		'clang':   ['-Ofast', '-march=native'],
 		'default': ['-O3']
 	},
 	'release': {
 		'msvc':    ['/O2', '/Zi'],
 		'owcc':    ['-O3', '-foptimize-sibling-calls', '-fomit-leaf-frame-pointer', '-fomit-frame-pointer', '-fschedule-insns', '-funsafe-math-optimizations', '-funroll-loops', '-frerun-optimizer', '-finline-functions', '-finline-limit=512', '-fguess-branch-probability', '-fno-strict-aliasing', '-floop-optimize'],
+		'gcc':     ['-O3', '-fno-semantic-interposition'],
 		'default': ['-O3']
 	},
 	'debug': {
 		'msvc':    ['/Od', '/ZI'],
 		'owcc':    ['-O0', '-fno-omit-frame-pointer', '-funwind-tables', '-fno-omit-leaf-frame-pointer'],
 		'default': ['-O0']
+	},
+	'msan': {
+		'clang':   ['-O2', '-g', '-fno-omit-frame-pointer', '-fsanitize=memory', '-pthread'],
+		'default': ['NO_MSAN_HERE']
 	},
 	'sanitize': {
 		'msvc':    ['/Od', '/RTC1', '/Zi', '/fsanitize=address'],
@@ -91,13 +100,13 @@ CFLAGS = {
 
 LTO_CFLAGS = {
 	'msvc':  ['/GL'],
-	'gcc':   ['-flto'],
+	'gcc':   ['-flto=auto'],
 	'clang': ['-flto']
 }
 
 LTO_LINKFLAGS = {
 	'msvc':  ['/LTCG'],
-	'gcc':   ['-flto'],
+	'gcc':   ['-flto=auto'],
 	'clang': ['-flto']
 }
 
@@ -110,7 +119,7 @@ POLLY_CFLAGS = {
 def options(opt):
 	grp = opt.add_option_group('Compiler optimization options')
 
-	grp.add_option('-T', '--build-type', action='store', dest='BUILD_TYPE', default=None,
+	grp.add_option('-T', '--build-type', action='store', dest='BUILD_TYPE', default='release',
 		help = 'build type: debug, release or none(custom flags)')
 
 	grp.add_option('--enable-lto', action = 'store_true', dest = 'LTO', default = False,
@@ -121,12 +130,11 @@ def options(opt):
 
 def configure(conf):
 	conf.start_msg('Build type')
-	if conf.options.BUILD_TYPE == None:
-		conf.end_msg('not set', color='RED')
-		conf.fatal('Set a build type, for example "-T release"')
-	elif not conf.options.BUILD_TYPE in VALID_BUILD_TYPES:
+
+	if not conf.options.BUILD_TYPE in VALID_BUILD_TYPES:
 		conf.end_msg(conf.options.BUILD_TYPE, color='RED')
 		conf.fatal('Invalid build type. Valid are: %s' % ', '.join(VALID_BUILD_TYPES))
+
 	conf.end_msg(conf.options.BUILD_TYPE)
 
 	conf.msg('LTO build', 'yes' if conf.options.LTO else 'no')
@@ -160,5 +168,18 @@ def get_optimization_flags(conf):
 
 	if conf.options.POLLY:
 		cflags   += conf.get_flags_by_compiler(POLLY_CFLAGS, conf.env.COMPILER_CC)
+
+	if conf.env.DEST_OS == 'nswitch' and conf.options.BUILD_TYPE == 'debug':
+		# enable remote debugger
+		cflags.append('-DNSWITCH_DEBUG')
+	elif conf.env.DEST_OS == 'psvita':
+		# this optimization is broken in vitasdk
+		cflags.append('-fno-optimize-sibling-calls')
+		# remove fvisibility to allow everything to be exported by default
+		cflags.remove('-fvisibility=hidden')
+
+	# on all compilers (except MSVC?) we need to copy CFLAGS to LINKFLAGS
+	if conf.options.LTO and conf.env.COMPILER_CC != 'msvc':
+		linkflags += cflags
 
 	return cflags, linkflags

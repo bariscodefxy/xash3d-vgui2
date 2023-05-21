@@ -86,7 +86,7 @@ static void BoneNameFix( void )
 		bone = (mstudiobone_t *)( (byte *)model_hdr + model_hdr->boneindex ) + i;
 
 		if( bone->name[0] == '\0' )
-			Q_sprintf( bone->name, "MDLDEC_Bone%i", ++counter );
+			Q_snprintf( bone->name, sizeof( bone->name ), "MDLDEC_Bone%i", ++counter );
 	}
 
 	if( counter )
@@ -164,9 +164,9 @@ static qboolean LoadMDL( const char *modelname )
 
 	if( destdir[0] != '\0' )
 	{
-		if( !IsFileExists( destdir ) )
+		if( !MakeDirectory( destdir ) )
 		{
-			fprintf( stderr, "ERROR: Couldn't find directory %s\n", destdir );
+			fprintf( stderr, "ERROR: Couldn't create directory %s\n", destdir );
 			return false;
 		}
 
@@ -175,12 +175,12 @@ static qboolean LoadMDL( const char *modelname )
 	else
 		COM_ExtractFilePath( modelname, destdir );
 
-	len -= 4; // path length without extension
+	len -= ( sizeof( ".mdl" ) - 1 ); // path length without extension
 
 	if( !model_hdr->numtextures )
 	{
-		Q_strcpy( texturename, modelname );
-		Q_strcpy( &texturename[len], "t.mdl" );
+		Q_strncpy( texturename, modelname, sizeof( texturename ));
+		Q_strncpy( &texturename[len], "t.mdl", sizeof( texturename ) - len );
 
 		texture_hdr = (studiohdr_t *)LoadFile( texturename );
 
@@ -222,11 +222,11 @@ static qboolean LoadMDL( const char *modelname )
 
 	if( model_hdr->numseqgroups > 1 )
 	{
-		Q_strcpy( seqgroupname, modelname );
+		Q_strncpy( seqgroupname, modelname, sizeof( seqgroupname ));
 
 		for( i = 1; i < model_hdr->numseqgroups; i++ )
 		{
-			Q_sprintf( &seqgroupname[len], "%02d.mdl", i );
+			Q_snprintf( &seqgroupname[len], sizeof( seqgroupname ) - len, "%02d.mdl", i );
 
 			anim_hdr[i] = (studiohdr_t *)LoadFile( seqgroupname );
 
@@ -244,7 +244,7 @@ static qboolean LoadMDL( const char *modelname )
 		}
 	}
 
-	COM_FileBase( modelname, modelfile );
+	COM_FileBase( modelname, modelfile, sizeof( modelfile ));
 
 	SequenceNameFix();
 
@@ -283,7 +283,7 @@ int main( int argc, char *argv[] )
 			goto end;
 		}
 
-		Q_strcpy( destdir, argv[2] );
+		Q_strncpy( destdir, argv[2], sizeof( destdir ));
 	}
 
 	if( !LoadActivityList( argv[0] ) || !LoadMDL( argv[1] ) )

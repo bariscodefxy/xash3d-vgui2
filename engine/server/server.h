@@ -258,6 +258,9 @@ typedef struct sv_client_s
 	int		userid;			// identifying number on server
 	int		extensions;
 	char		useragent[MAX_INFO_STRING];
+
+	int ignorecmdtime_warns; // how many times client time was faster than server during this session
+	qboolean ignorecmdtime_warned; // did we warn our server operator in the log for this batch of commands?
 } sv_client_t;
 
 /*
@@ -328,7 +331,6 @@ typedef struct
 	qboolean	msg_trace;		// trace this message
 
 	void		*hInstance;		// pointer to game.dll
-	qboolean		config_executed;		// should to execute config.cfg once time to restore FCVAR_ARCHIVE that specified in hl.dll
 
 	edict_t		*edicts;			// solid array of server entities
 	int		numEntities;		// actual entities count
@@ -375,7 +377,6 @@ typedef struct
 	entity_state_t	*baselines;		// [GI->max_edicts]
 	entity_state_t	*static_entities;		// [MAX_STATIC_ENTITIES];
 
-	double		last_heartbeat;
 	challenge_t	challenges[MAX_CHALLENGES];	// to prevent invalid IPs from connecting
 } server_static_t;
 
@@ -394,7 +395,7 @@ extern convar_t		sv_unlag;
 extern convar_t		sv_maxunlag;
 extern convar_t		sv_unlagpush;
 extern convar_t		sv_unlagsamples;
-extern convar_t		rcon_password;
+extern convar_t		rcon_enable;
 extern convar_t		sv_instancedbaseline;
 extern convar_t		sv_background_freeze;
 extern convar_t		sv_minupdaterate;
@@ -418,6 +419,8 @@ extern convar_t		sv_stopspeed;
 extern convar_t		sv_maxspeed;
 extern convar_t		sv_wateralpha;
 extern convar_t		sv_wateramp;
+extern convar_t		sv_voiceenable;
+extern convar_t		sv_voicequality;
 extern convar_t		sv_stepsize;
 extern convar_t		sv_maxvelocity;
 extern convar_t		sv_rollangle;
@@ -433,10 +436,17 @@ extern convar_t		sv_consistency;
 extern convar_t		sv_password;
 extern convar_t		sv_uploadmax;
 extern convar_t		sv_trace_messages;
+extern convar_t		sv_enttools_enable;
+extern convar_t		sv_enttools_maxfire;
+extern convar_t		sv_autosave;
 extern convar_t		deathmatch;
 extern convar_t		hostname;
 extern convar_t		skill;
 extern convar_t		coop;
+extern convar_t		sv_cheats;
+extern convar_t		public_server;
+extern convar_t		sv_nat;
+extern convar_t		sv_speedhack_kick;
 
 extern	convar_t		*sv_pausable;		// allows pause in multiplayer
 extern	convar_t		*sv_check_errors;
@@ -445,13 +455,13 @@ extern	convar_t		*sv_lighting_modulate;
 extern	convar_t		*sv_novis;
 extern	convar_t		*sv_hostmap;
 extern	convar_t		*sv_validate_changelevel;
-extern	convar_t		*public_server;
 
 //===========================================================
 //
 // sv_main.c
 //
 void SV_FinalMessage( const char *message, qboolean reconnect );
+void SV_KickPlayer( sv_client_t *cl, const char *fmt, ... ) _format( 2 );
 void SV_DropClient( sv_client_t *cl, qboolean crash );
 void SV_UpdateMovevars( qboolean initialize );
 int SV_ModelIndex( const char *name );
@@ -473,9 +483,6 @@ qboolean SV_ProcessUserAgent( netadr_t from, const char *useragent );
 void Host_SetServerState( int state );
 qboolean SV_IsSimulating( void );
 void SV_FreeClients( void );
-void Master_Add( void );
-void Master_Heartbeat( void );
-void Master_Packet( void );
 
 //
 // sv_init.c
@@ -546,6 +553,7 @@ void SV_InitClientMove( void );
 void SV_UpdateServerInfo( void );
 void SV_EndRedirect( void );
 void SV_RejectConnection( netadr_t from, const char *fmt, ... ) _format( 2 );
+void SV_GetPlayerCount( int *clients, int *bots );
 
 //
 // sv_cmds.c
@@ -584,7 +592,6 @@ void SV_InactivateClients( void );
 int SV_FindBestBaselineForStatic( int index, entity_state_t **baseline, entity_state_t *to );
 void SV_WriteFrameToClient( sv_client_t *client, sizebuf_t *msg );
 void SV_BuildClientFrame( sv_client_t *client );
-void SV_SendMessagesToAll( void );
 void SV_SkipUpdates( void );
 
 //
@@ -627,7 +634,6 @@ void SV_StartSound( edict_t *ent, int chan, const char *sample, float vol, float
 edict_t *SV_FindGlobalEntity( string_t classname, string_t globalname );
 qboolean SV_CreateStaticEntity( struct sizebuf_s *msg, int index );
 void SV_SendUserReg( sizebuf_t *msg, sv_user_message_t *user );
-edict_t* pfnPEntityOfEntIndex( int iEntIndex );
 int pfnIndexOfEdict( const edict_t *pEdict );
 void pfnWriteBytes( const byte *bytes, int count );
 void SV_UpdateBaseVelocity( edict_t *ent );
@@ -640,8 +646,11 @@ void SV_RestartAmbientSounds( void );
 void SV_RestartDecals( void );
 void SV_RestartStaticEnts( void );
 int pfnGetCurrentPlayer( void );
+int pfnDropToFloor( edict_t* e );
 edict_t *SV_EdictNum( int n );
 char *SV_Localinfo( void );
+void SV_SetModel( edict_t *ent, const char *name );
+
 //
 // sv_log.c
 //
@@ -654,7 +663,7 @@ void SV_SetLogAddress_f( void );
 //
 // sv_save.c
 //
-void SV_SaveGame( const char *pName );
+qboolean SV_SaveGame( const char *pName );
 qboolean SV_LoadGame( const char *pName );
 int SV_LoadGameState( char const *level );
 void SV_ChangeLevel( qboolean loadfromsavedgame, const char *mapname, const char *start, qboolean background );
@@ -691,6 +700,5 @@ void SV_RunLightStyles( void );
 void SV_SetLightStyle( int style, const char* s, float f );
 const char *SV_GetLightStyle( int style );
 int SV_LightForEntity( edict_t *pEdict );
-void SV_ClearPhysEnts( void );
 
 #endif//SERVER_H

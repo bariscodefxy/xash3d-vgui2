@@ -152,6 +152,30 @@ int GAME_EXPORT COM_RandomLong( int lLow, int lHigh )
 }
 
 /*
+============
+va
+
+does a varargs printf into a temp buffer,
+so I don't need to have varargs versions
+of all text functions.
+============
+*/
+char *va( const char *format, ... )
+{
+	va_list		argptr;
+	static char	string[16][MAX_VA_STRING], *s;
+	static int	stringindex = 0;
+
+	s = string[stringindex];
+	stringindex = (stringindex + 1) & 15;
+	va_start( argptr, format );
+	Q_vsnprintf( s, sizeof( string[0] ), format, argptr );
+	va_end( argptr );
+
+	return s;
+}
+
+/*
 ===============================================================================
 
 	LZSS Compression
@@ -529,7 +553,6 @@ This doesn't search in the pak file.
 */
 int GAME_EXPORT COM_ExpandFilename( const char *fileName, char *nameOutBuffer, int nameOutBufferSize )
 {
-	const char	*path;
 	char		result[MAX_SYSPATH];
 
 	if( !COM_CheckString( fileName ) || !nameOutBuffer || nameOutBufferSize <= 0 )
@@ -538,10 +561,8 @@ int GAME_EXPORT COM_ExpandFilename( const char *fileName, char *nameOutBuffer, i
 	// filename examples:
 	// media\sierra.avi - D:\Xash3D\valve\media\sierra.avi
 	// models\barney.mdl - D:\Xash3D\bshift\models\barney.mdl
-	if(( path = FS_GetDiskPath( fileName, false )) != NULL )
+	if( g_fsapi.GetFullDiskPath( result, sizeof( result ), fileName, false ))
 	{
-		Q_sprintf( result, "%s/%s", host.rootdir, path );
-
 		// check for enough room
 		if( Q_strlen( result ) > nameOutBufferSize )
 			return 0;
@@ -583,23 +604,6 @@ void COM_TrimSpace( const char *source, char *dest )
 
 	// terminate the dest string
 	dest[length] = 0;
-}
-
-/*
-============
-COM_FixSlashes
-
-Changes all '/' characters into '\' characters, in place.
-============
-*/
-void COM_FixSlashes( char *pname )
-{
-	while( *pname )
-	{
-		if( *pname == '\\' )
-			*pname = '/';
-		pname++;
-	}
 }
 
 /*
@@ -893,9 +897,7 @@ cvar_t *pfnCvar_RegisterClientVariable( const char *szName, const char *szValue,
 	if( !Q_stricmp( szName, "motdfile" ))
 		flags |= FCVAR_PRIVILEGED;
 
-	if( FBitSet( flags, FCVAR_GLCONFIG ))
-		return (cvar_t *)Cvar_Get( szName, szValue, flags, va( CVAR_GLCONFIG_DESCRIPTION, szName ));
-	return (cvar_t *)Cvar_Get( szName, szValue, flags|FCVAR_CLIENTDLL, Cvar_BuildAutoDescription( flags|FCVAR_CLIENTDLL ));
+	return (cvar_t *)Cvar_Get( szName, szValue, flags|FCVAR_CLIENTDLL, Cvar_BuildAutoDescription( szName, flags|FCVAR_CLIENTDLL ));
 }
 
 /*
@@ -906,9 +908,7 @@ pfnCvar_RegisterVariable
 */
 cvar_t *pfnCvar_RegisterGameUIVariable( const char *szName, const char *szValue, int flags )
 {
-	if( FBitSet( flags, FCVAR_GLCONFIG ))
-		return (cvar_t *)Cvar_Get( szName, szValue, flags, va( CVAR_GLCONFIG_DESCRIPTION, szName ));
-	return (cvar_t *)Cvar_Get( szName, szValue, flags|FCVAR_GAMEUIDLL, Cvar_BuildAutoDescription( flags|FCVAR_GAMEUIDLL ));
+	return (cvar_t *)Cvar_Get( szName, szValue, flags|FCVAR_GAMEUIDLL, Cvar_BuildAutoDescription( szName, flags|FCVAR_GAMEUIDLL ));
 }
 
 /*
@@ -1003,7 +1003,7 @@ pfnGetGameDir
 void GAME_EXPORT pfnGetGameDir( char *szGetGameDir )
 {
 	if( !szGetGameDir ) return;
-	Q_strcpy( szGetGameDir, GI->gamefolder );
+	Q_strncpy( szGetGameDir, GI->gamefolder, sizeof( GI->gamefolder ));
 }
 
 qboolean COM_IsSafeFileToDownload( const char *filename )
@@ -1050,15 +1050,32 @@ qboolean COM_IsSafeFileToDownload( const char *filename )
 	return true;
 }
 
+const char *COM_GetResourceTypeName( resourcetype_t restype )
+{
+	switch( restype )
+	{
+		case t_decal: return "decal";
+		case t_eventscript: return "eventscript";
+		case t_generic: return "generic";
+		case t_model: return "model";
+		case t_skin: return "skin";
+		case t_sound: return "sound";
+		case t_world: return "world";
+		default: return "unknown";
+	}
+}
+
 char *_copystring( poolhandle_t mempool, const char *s, const char *filename, int fileline )
 {
+	size_t	size;
 	char	*b;
 
 	if( !s ) return NULL;
 	if( !mempool ) mempool = host.mempool;
 
-	b = _Mem_Alloc( mempool, Q_strlen( s ) + 1, false, filename, fileline );
-	Q_strcpy( b, s );
+	size = Q_strlen( s ) + 1;
+	b = _Mem_Alloc( mempool, size, false, filename, fileline );
+	Q_strncpy( b, s, size );
 
 	return b;
 }
@@ -1082,7 +1099,6 @@ used by CS:CZ
 void *GAME_EXPORT pfnSequenceGet( const char *fileName, const char *entryName )
 {
 	Msg( "Sequence_Get: file %s, entry %s\n", fileName, entryName );
-
 
 	return Sequence_Get( fileName, entryName );
 }
@@ -1182,22 +1198,22 @@ void Test_RunCommon( void )
 
 	Msg( "Checking COM_ParseFile...\n" );
 
-	file = _COM_ParseFileSafe( file, buf, sizeof( buf ), 0, &len );
+	file = COM_ParseFileSafe( file, buf, sizeof( buf ), 0, &len, NULL );
 	TASSERT( !Q_strcmp( buf, "q" ) && len == 1);
 
-	file = _COM_ParseFileSafe( file, buf, sizeof( buf ), 0, &len );
+	file = COM_ParseFileSafe( file, buf, sizeof( buf ), 0, &len, NULL );
 	TASSERT( !Q_strcmp( buf, "asdf" ) && len == 4);
 
-	file = _COM_ParseFileSafe( file, buf, sizeof( buf ), 0, &len );
+	file = COM_ParseFileSafe( file, buf, sizeof( buf ), 0, &len, NULL );
 	TASSERT( !Q_strcmp( buf, "qwer" ) && len == -1);
 
-	file = _COM_ParseFileSafe( file, buf, sizeof( buf ), 0, &len );
+	file = COM_ParseFileSafe( file, buf, sizeof( buf ), 0, &len, NULL );
 	TASSERT( !Q_strcmp( buf, "f \"f" ) && len == 4);
 
-	file = _COM_ParseFileSafe( file, buf, sizeof( buf ), 0, &len );
+	file = COM_ParseFileSafe( file, buf, sizeof( buf ), 0, &len, NULL );
 	TASSERT( !Q_strcmp( buf, "meow" ) && len == -1);
 
-	file = _COM_ParseFileSafe( file, buf, sizeof( buf ), 0, &len );
+	file = COM_ParseFileSafe( file, buf, sizeof( buf ), 0, &len, NULL );
 	TASSERT( !Q_strcmp( buf, "bark" ) && len == 4);
 }
 #endif

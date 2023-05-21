@@ -256,6 +256,7 @@ vidmode_t *R_GetVideoMode( int num )
 
 static void R_InitVideoModes( void )
 {
+	char buf[MAX_VA_STRING];
 #if SDL_VERSION_ATLEAST( 2, 0, 0 )
 	int displayIndex = 0; // TODO: handle multiple displays somehow
 	int i, modes;
@@ -295,7 +296,8 @@ static void R_InitVideoModes( void )
 
 		vidmodes[num_vidmodes].width = mode.w;
 		vidmodes[num_vidmodes].height = mode.h;
-		vidmodes[num_vidmodes].desc = copystring( va( "%ix%i", mode.w, mode.h ));
+		Q_snprintf( buf, sizeof( buf ), "%ix%i", mode.w, mode.h );
+		vidmodes[num_vidmodes].desc = copystring( buf );
 
 		num_vidmodes++;
 	}
@@ -330,7 +332,8 @@ static void R_InitVideoModes( void )
 
 		vidmodes[num_vidmodes].width = mode->w;
 		vidmodes[num_vidmodes].height = mode->h;
-		vidmodes[num_vidmodes].desc = copystring( va( "%ix%i", mode->w, mode->h ));
+		Q_snprintf( buf, sizeof( buf ), "%ix%i", mode->w, mode->h );
+		vidmodes[num_vidmodes].desc = copystring( buf );
 
 		num_vidmodes++;
 	}
@@ -422,15 +425,19 @@ GL_GetProcAddress
 */
 void *GL_GetProcAddress( const char *name )
 {
-#if defined( XASH_NANOGL )
-	void *func = nanoGL_GetProcAddress( name );
-#else
 	void *func = SDL_GL_GetProcAddress( name );
+
+#if XASH_PSVITA
+	// try to find in main module
+	if( !func )
+	{
+		func = dlsym( NULL, name );
+	}
 #endif
 
 	if( !func )
 	{
-		Con_Reportf( S_ERROR  "Error: GL_GetProcAddress failed for %s\n", name );
+		Con_Reportf( S_ERROR "GL_GetProcAddress failed for %s\n", name );
 	}
 
 	return func;
@@ -484,7 +491,7 @@ qboolean GL_DeleteContext( void )
 GL_CreateContext
 =================
 */
-qboolean GL_CreateContext( void )
+static qboolean GL_CreateContext( void )
 {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	if( ( glw_state.context = SDL_GL_CreateContext( host.hWnd ) ) == NULL)
@@ -501,7 +508,7 @@ qboolean GL_CreateContext( void )
 GL_UpdateContext
 =================
 */
-qboolean GL_UpdateContext( void )
+static qboolean GL_UpdateContext( void )
 {
 #if SDL_VERSION_ATLEAST( 2, 0, 0 )
 	if( SDL_GL_MakeCurrent( host.hWnd, glw_state.context ))
@@ -553,7 +560,9 @@ static qboolean VID_SetScreenResolution( int width, int height )
 	Uint32 wndFlags = 0;
 	static string wndname;
 
+#if !XASH_APPLE
 	if( vid_highdpi->value ) wndFlags |= SDL_WINDOW_ALLOW_HIGHDPI;
+#endif
 	Q_strncpy( wndname, GI->title, sizeof( wndname ));
 
 	want.w = width;
@@ -561,10 +570,11 @@ static qboolean VID_SetScreenResolution( int width, int height )
 	want.driverdata = NULL;
 	want.format = want.refresh_rate = 0; // don't care
 
-	if( !SDL_GetClosestDisplayMode(0, &want, &got) )
+	if( !SDL_GetClosestDisplayMode( 0, &want, &got ))
 		return false;
 
-	Con_Reportf( "Got closest display mode: %ix%i@%i\n", got.w, got.h, got.refresh_rate);
+	if( got.w != want.w || got.h != want.h )
+		Con_Reportf( "Got closest display mode: %ix%i@%i\n", got.w, got.h, got.refresh_rate);
 
 	if( SDL_SetWindowDisplayMode( host.hWnd, &got) == -1 )
 		return false;
@@ -598,7 +608,7 @@ void VID_RestoreScreenResolution( void )
 #endif // SDL_VERSION_ATLEAST( 2, 0, 0 )
 }
 
-#if XASH_WIN32 && !XASH_64BIT // ICO support only for Win32
+#if XASH_WIN32 // ICO support only for Win32
 #include "SDL_syswm.h"
 static void WIN_SetWindowIcon( HICON ico )
 {
@@ -609,7 +619,8 @@ static void WIN_SetWindowIcon( HICON ico )
 
 	if( SDL_GetWindowWMInfo( host.hWnd, &wminfo ) )
 	{
-		SetClassLong( wminfo.info.win.window, GCL_HICON, (LONG)ico );
+		SendMessage( wminfo.info.win.window, WM_SETICON, ICON_SMALL, (LONG_PTR)ico );
+		SendMessage( wminfo.info.win.window, WM_SETICON, ICON_BIG, (LONG_PTR)ico );
 	}
 }
 #endif
@@ -628,6 +639,7 @@ qboolean VID_CreateWindow( int width, int height, qboolean fullscreen )
 	qboolean iconLoaded = false;
 	char iconpath[MAX_STRING];
 	int xpos, ypos;
+	const char *localIcoPath;
 
 	if( vid_highdpi->value ) wndFlags |= SDL_WINDOW_ALLOW_HIGHDPI;
 	Q_strncpy( wndname, GI->title, sizeof( wndname ));
@@ -636,11 +648,33 @@ qboolean VID_CreateWindow( int width, int height, qboolean fullscreen )
 
 	if( !fullscreen )
 	{
+		SDL_Rect r;
+
 		wndFlags |= SDL_WINDOW_RESIZABLE;
-		xpos = Cvar_VariableInteger( "_window_xpos" );
-		ypos = Cvar_VariableInteger( "_window_ypos" );
-		if( xpos < 0 ) xpos = SDL_WINDOWPOS_CENTERED;
-		if( ypos < 0 ) ypos = SDL_WINDOWPOS_CENTERED;
+
+#if SDL_VERSION_ATLEAST( 2, 0, 5 )
+		if( SDL_GetDisplayUsableBounds( 0, &r ) < 0 &&
+			SDL_GetDisplayBounds( 0, &r ) < 0 )
+#else
+		if( SDL_GetDisplayBounds( 0, &r ) < 0 )
+#endif
+		{
+			Con_Reportf( S_ERROR "VID_CreateWindow: SDL_GetDisplayBounds failed: %s\n", SDL_GetError( ));
+			xpos = SDL_WINDOWPOS_CENTERED;
+			ypos = SDL_WINDOWPOS_CENTERED;
+		}
+		else
+		{
+			xpos = Cvar_VariableInteger( "_window_xpos" );
+			ypos = Cvar_VariableInteger( "_window_ypos" );
+
+			// don't create window outside of usable display space
+			if( xpos < r.x || xpos + width > r.x + r.w )
+				xpos = SDL_WINDOWPOS_CENTERED;
+
+			if( ypos < r.y || ypos + height > r.y + r.h )
+				ypos = SDL_WINDOWPOS_CENTERED;
+		}
 	}
 	else
 	{
@@ -686,14 +720,12 @@ qboolean VID_CreateWindow( int width, int height, qboolean fullscreen )
 		VID_RestoreScreenResolution();
 	}
 
-#if XASH_WIN32 && !XASH_64BIT // ICO support only for Win32
-	if( FS_FileExists( GI->iconpath, true ) )
+#if XASH_WIN32 // ICO support only for Win32
+	if(( localIcoPath = FS_GetDiskPath( GI->iconpath, true )))
 	{
 		HICON ico;
-		char	localPath[MAX_PATH];
 
-		Q_snprintf( localPath, sizeof( localPath ), "%s/%s", GI->gamefolder, GI->iconpath );
-		ico = (HICON)LoadImage( NULL, localPath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE|LR_DEFAULTSIZE );
+		ico = (HICON)LoadImage( NULL, localIcoPath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE|LR_DEFAULTSIZE );
 
 		if( ico )
 		{
@@ -705,9 +737,8 @@ qboolean VID_CreateWindow( int width, int height, qboolean fullscreen )
 
 	if( !iconLoaded )
 	{
-		Q_strcpy( iconpath, GI->iconpath );
-		COM_StripExtension( iconpath );
-		COM_DefaultExtension( iconpath, ".tga" );
+		Q_strncpy( iconpath, GI->iconpath, sizeof( iconpath ));
+		COM_ReplaceExtension( iconpath, ".tga", sizeof( iconpath ));
 
 		icon = FS_LoadImage( iconpath, NULL, 0 );
 
@@ -728,7 +759,7 @@ qboolean VID_CreateWindow( int width, int height, qboolean fullscreen )
 		}
 	}
 
-#if XASH_WIN32 && !XASH_64BIT // ICO support only for Win32
+#if XASH_WIN32 // ICO support only for Win32
 	if( !iconLoaded )
 	{
 		WIN_SetWindowIcon( LoadIcon( host.hInst, MAKEINTRESOURCE( 101 ) ) );

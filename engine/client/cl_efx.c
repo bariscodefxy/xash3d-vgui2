@@ -142,26 +142,6 @@ void CL_FreeParticles( void )
 
 /*
 ================
-CL_FreeParticle
-
-move particle to freelist
-================
-*/
-void CL_FreeParticle( particle_t *p )
-{
-	if( p->deathfunc )
-	{
-		// call right the deathfunc before die
-		p->deathfunc( p );
-		p->deathfunc = NULL;
-	}
-
-	p->next = cl_free_particles;
-	cl_free_particles = p;
-}
-
-/*
-================
 CL_AllocParticleFast
 
 unconditionally give new particle pointer from cl_free_particles
@@ -1111,8 +1091,12 @@ R_ParticleExplosion2
 void GAME_EXPORT R_ParticleExplosion2( const vec3_t org, int colorStart, int colorLength )
 {
 	int		i, j;
-	int		colorMod = 0;
+	int		colorMod = 0, packedColor;
 	particle_t	*p;
+
+	if( FBitSet( host.features, ENGINE_QUAKE_COMPATIBLE ))
+		packedColor = 255; // use old code for blob particles
+	else packedColor = 0;
 
 	for( i = 0; i < 512; i++ )
 	{
@@ -1121,7 +1105,7 @@ void GAME_EXPORT R_ParticleExplosion2( const vec3_t org, int colorStart, int col
 
 		p->die = cl.time + 0.3f;
 		p->color = colorStart + ( colorMod % colorLength );
-		p->packedColor = 255; // use old code for blob particles
+		p->packedColor = packedColor;
 		colorMod++;
 
 		p->type = pt_blob;
@@ -1143,15 +1127,19 @@ R_BlobExplosion
 void GAME_EXPORT R_BlobExplosion( const vec3_t org )
 {
 	particle_t	*p;
-	int		i, j;
+	int		i, j, packedColor;
+
+	if( FBitSet( host.features, ENGINE_QUAKE_COMPATIBLE ))
+		packedColor = 255; // use old code for blob particles
+	else packedColor = 0;
 
 	for( i = 0; i < 1024; i++ )
 	{
 		p = R_AllocParticle( NULL );
 		if( !p ) return;
 
-		p->die = cl.time + COM_RandomFloat( 2.0f, 2.4f );
-		p->packedColor = 255; // use old code for blob particles
+		p->die = cl.time + COM_RandomFloat( 1.0f, 1.4f );
+		p->packedColor = packedColor;
 
 		if( i & 1 )
 		{

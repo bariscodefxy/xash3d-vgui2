@@ -109,6 +109,11 @@ typedef struct cldll_func_dst_s
 	void	(*pfnGetPlayerTeam)( int *iPlayer );
 } cldll_func_dst_t;
 
+struct cl_enginefunc_dst_s;
+struct modshelpers_s;
+struct modchelpers_s;
+struct engdata_s;
+
 typedef struct modfuncs_s
 {
 	void	(*m_pfnLoadMod)( char *pchModule );
@@ -398,18 +403,17 @@ static cldll_func_dst_t cldllFuncDst =
 	DstGetPlayerTeam,
 };
 
-void GetSecuredClientAPI( CL_EXPORT_FUNCS F )
+void CL_GetSecuredClientAPI( CL_EXPORT_FUNCS F )
 {
-	cldll_func_src_t cldllFuncSrc;
-	modfuncs_t modFuncs;
-	const dllfunc_t *func;
-
-	memset( &cldllFuncSrc, 0, sizeof( cldllFuncSrc ) );
-	memset( &modFuncs, 0, sizeof( modFuncs ) );
+	modfuncs_t modFuncs = { 0 };
 
 	// secured client dlls need these
-	*(cldll_func_dst_t **)&cldllFuncSrc.pfnVidInit = &cldllFuncDst;
-	*(modfuncs_t **)&cldllFuncSrc.pfnInitialize = &modFuncs;
+	cldll_func_src_t cldllFuncSrc =
+	{
+		(void *)&modFuncs,
+		NULL,
+		(void *)&cldllFuncDst
+	};
 
 	// trying to fill interface now
 	F( &cldllFuncSrc );

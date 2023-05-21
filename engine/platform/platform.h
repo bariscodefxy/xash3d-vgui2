@@ -20,6 +20,8 @@ GNU General Public License for more details.
 #include "common.h"
 #include "system.h"
 #include "defaults.h"
+#include "cursor_type.h"
+#include "key_modifiers.h"
 
 /*
 ==============================================================================
@@ -35,14 +37,31 @@ double Platform_DoubleTime( void );
 void Platform_Sleep( int msec );
 void Platform_ShellExecute( const char *path, const char *parms );
 void Platform_MessageBox( const char *title, const char *message, qboolean parentMainWindow );
-// commented out, as this is an optional feature or maybe implemented in system API directly
-// see system.c
-// qboolean Sys_DebuggerPresent( void );
+qboolean Sys_DebuggerPresent( void ); // optional, see Sys_DebugBreak
 
 #if XASH_ANDROID
 const char *Android_GetAndroidID( void );
 const char *Android_LoadID( void );
 void Android_SaveID( const char *id );
+#endif
+
+#if XASH_WIN32
+void Platform_UpdateStatusLine( void );
+#else 
+static inline void Platform_UpdateStatusLine( void ) { }
+#endif  
+
+#if XASH_NSWITCH
+void NSwitch_Init( void );
+void NSwitch_Shutdown( void );
+#endif
+
+#if XASH_PSVITA
+void PSVita_Init( void );
+void PSVita_Shutdown( void );
+qboolean PSVita_GetBasePath( char *buf, const size_t buflen );
+int PSVita_GetArgv( int in_argc, char **in_argv, char ***out_argv );
+void PSVita_InputUpdate( void );
 #endif
 
 /*
@@ -66,6 +85,7 @@ void*Platform_GetNativeObject( const char *name );
 int Platform_JoyInit( int numjoy ); // returns number of connected gamepads, negative if error
 // Text input
 void Platform_EnableTextInput( qboolean enable );
+key_modifier_t Platform_GetKeyModifiers( void );
 // System events
 void Platform_RunEvents( void );
 // Mouse
@@ -73,9 +93,10 @@ void Platform_GetMousePos( int *x, int *y );
 void Platform_SetMousePos( int x, int y );
 void Platform_PreCreateMove( void );
 void Platform_MouseMove( float *x, float *y );
+void Platform_SetCursorType( VGUI_DefaultCursor type );
 // Clipboard
-void Platform_GetClipboardText( char *buffer, size_t size );
-void Platform_SetClipboardText( const char *buffer, size_t size );
+int Platform_GetClipboardText( char *buffer, size_t size );
+void Platform_SetClipboardText( const char *buffer );
 
 #if XASH_SDL == 12
 #define SDL_SetWindowGrab( wnd, state ) SDL_WM_GrabInput( (state) )
@@ -128,7 +149,7 @@ qboolean SW_CreateBuffer( int width, int height, uint *stride, uint *bpp, uint *
 //
 // in_evdev.c
 //
-#ifdef XASH_USE_EVDEV
+#if XASH_USE_EVDEV
 void Evdev_SetGrab( qboolean grab );
 void Evdev_Shutdown( void );
 void Evdev_Init( void );
@@ -151,5 +172,10 @@ void SNDDMA_Activate( qboolean active ); // pause audio
 // void SNDDMA_PrintDeviceName( void ); // unused
 // void SNDDMA_LockSound( void ); // unused
 // void SNDDMA_UnlockSound( void ); // unused
+
+qboolean VoiceCapture_Init( void );
+void VoiceCapture_Shutdown( void );
+qboolean VoiceCapture_Activate( qboolean activate );
+qboolean VoiceCapture_Lock( qboolean lock );
 
 #endif // PLATFORM_H

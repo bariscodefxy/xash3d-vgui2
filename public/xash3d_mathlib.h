@@ -22,11 +22,10 @@ GNU General Public License for more details.
 #endif
 
 #include "build.h"
+#include "xash3d_types.h"
+#include "const.h"
 #include "com_model.h"
-
-#ifdef XASH_MSVC
-#pragma warning(disable : 4201)	// nonstandard extension used
-#endif
+#include "studio.h"
 
 // euler angle order
 #define PITCH		0
@@ -34,18 +33,18 @@ GNU General Public License for more details.
 #define ROLL		2
 
 #ifndef M_PI
-#define M_PI		(float)3.14159265358979323846
+#define M_PI		(double)3.14159265358979323846
 #endif
 
 #ifndef M_PI2
-#define M_PI2		((float)(M_PI * 2))
+#define M_PI2		((double)(M_PI * 2))
 #endif
 
 #define M_PI_F		((float)(M_PI))
 #define M_PI2_F		((float)(M_PI2))
 
-#define RAD2DEG( x )	((float)(x) * (float)(180.f / M_PI_F))
-#define DEG2RAD( x )	((float)(x) * (float)(M_PI_F / 180.f))
+#define RAD2DEG( x )	((double)(x) * (double)(180.0 / M_PI))
+#define DEG2RAD( x )	((double)(x) * (double)(M_PI / 180.0))
 
 #define NUMVERTEXNORMALS	162
 
@@ -81,6 +80,9 @@ GNU General Public License for more details.
 #define Q_round( x, y )	(floor( x / y + 0.5f ) * y )
 #define Q_rint(x)		((x) < 0.0f ? ((int)((x)-0.5f)) : ((int)((x)+0.5f)))
 
+#ifdef XASH_IRIX
+#undef isnan
+#endif
 #ifdef isnan // check for C99 isnan
 #define IS_NAN isnan
 #else
@@ -93,6 +95,7 @@ GNU General Public License for more details.
 #define DotProduct(x,y) ((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2])
 #define DotProductAbs(x,y) (abs((x)[0]*(y)[0])+abs((x)[1]*(y)[1])+abs((x)[2]*(y)[2]))
 #define DotProductFabs(x,y) (fabs((x)[0]*(y)[0])+fabs((x)[1]*(y)[1])+fabs((x)[2]*(y)[2]))
+#define DotProductPrecise(x,y) ((double)(x)[0]*(double)(y)[0]+(double)(x)[1]*(double)(y)[1]+(double)(x)[2]*(double)(y)[2])
 #define CrossProduct(a,b,c) ((c)[0]=(a)[1]*(b)[2]-(a)[2]*(b)[1],(c)[1]=(a)[2]*(b)[0]-(a)[0]*(b)[2],(c)[2]=(a)[0]*(b)[1]-(a)[1]*(b)[0])
 #define Vector2Subtract(a,b,c) ((c)[0]=(a)[0]-(b)[0],(c)[1]=(a)[1]-(b)[1])
 #define VectorSubtract(a,b,c) ((c)[0]=(a)[0]-(b)[0],(c)[1]=(a)[1]-(b)[1],(c)[2]=(a)[2]-(b)[2])
@@ -134,11 +137,46 @@ GNU General Public License for more details.
 #define PlaneDiff(point,plane) (((plane)->type < 3 ? (point)[(plane)->type] : DotProduct((point), (plane)->normal)) - (plane)->dist)
 #define bound( min, num, max ) ((num) >= (min) ? ((num) < (max) ? (num) : (max)) : (min))
 
+// horrible cast but helps not breaking strict aliasing in mathlib
+// as union type punning should be fine in C but not in C++
+// so don't carry over this to C++ code
+typedef union
+{
+	float fl;
+	uint32_t u;
+	int32_t i;
+} float_bits_t;
+
+static inline uint32_t FloatAsUint( float v )
+{
+	float_bits_t bits = { v };
+	return bits.u;
+}
+
+static inline int32_t FloatAsInt( float v )
+{
+	float_bits_t bits = { v };
+	return bits.i;
+}
+
+static inline float IntAsFloat( int32_t i )
+{
+	float_bits_t bits;
+	bits.i = i;
+	return bits.fl;
+}
+
+static inline float UintAsFloat( uint32_t u )
+{
+	float_bits_t bits;
+	bits.u = u;
+	return bits.fl;
+}
+
 float rsqrt( float number );
 float anglemod( float a );
 word FloatToHalf( float v );
 float HalfToFloat( word h );
-float SimpleSpline( float value );
 void RoundUpHullSize( vec3_t size );
 int SignbitsForPlane( const vec3_t normal );
 int PlaneTypeForNormal( const vec3_t normal );
@@ -150,7 +188,6 @@ void VectorVectors( const vec3_t forward, vec3_t right, vec3_t up );
 void VectorAngles( const float *forward, float *angles );
 void AngleVectors( const vec3_t angles, vec3_t forward, vec3_t right, vec3_t up );
 void VectorsAngles( const vec3_t forward, const vec3_t right, const vec3_t up, vec3_t angles );
-qboolean PlanesGetIntersectionPoint( const struct mplane_s *plane1, const struct mplane_s *plane2, const struct mplane_s *plane3, vec3_t out );
 void PlaneIntersect( const struct mplane_s *plane, const vec3_t p0, const vec3_t p1, vec3_t out );
 
 void ClearBounds( vec3_t mins, vec3_t maxs );
@@ -170,7 +207,7 @@ float ApproachVal( float target, float value, float speed );
 //
 // matrixlib.c
 //
-#define Matrix3x4_LoadIdentity( mat )		Matrix3x4_Copy( mat, matrix3x4_identity )
+#define Matrix3x4_LoadIdentity( mat )		Matrix3x4_Copy( mat, m_matrix3x4_identity )
 #define Matrix3x4_Copy( out, in )		memcpy( out, in, sizeof( matrix3x4 ))
 
 void Matrix3x4_VectorTransform( const matrix3x4 in, const float v[3], float out[3] );
@@ -180,15 +217,12 @@ void Matrix3x4_VectorIRotate( const matrix3x4 in, const float v[3], float out[3]
 void Matrix3x4_ConcatTransforms( matrix3x4 out, const matrix3x4 in1, const matrix3x4 in2 );
 void Matrix3x4_FromOriginQuat( matrix3x4 out, const vec4_t quaternion, const vec3_t origin );
 void Matrix3x4_CreateFromEntity( matrix3x4 out, const vec3_t angles, const vec3_t origin, float scale );
-void Matrix3x4_TransformPositivePlane( const matrix3x4 in, const vec3_t normal, float d, vec3_t out, float *dist );
 void Matrix3x4_TransformAABB( const matrix3x4 world, const vec3_t mins, const vec3_t maxs, vec3_t absmin, vec3_t absmax );
 void Matrix3x4_SetOrigin( matrix3x4 out, float x, float y, float z );
-void Matrix3x4_Invert_Simple( matrix3x4 out, const matrix3x4 in1 );
 void Matrix3x4_OriginFromMatrix( const matrix3x4 in, float *out );
 void Matrix3x4_AnglesFromMatrix( const matrix3x4 in, vec3_t out );
-void Matrix3x4_Transpose( matrix3x4 out, const matrix3x4 in1 );
 
-#define Matrix4x4_LoadIdentity( mat )	Matrix4x4_Copy( mat, matrix4x4_identity )
+#define Matrix4x4_LoadIdentity( mat )	Matrix4x4_Copy( mat, m_matrix4x4_identity )
 #define Matrix4x4_Copy( out, in )	memcpy( out, in, sizeof( matrix4x4 ))
 
 void Matrix4x4_VectorTransform( const matrix4x4 in, const float v[3], float out[3] );
@@ -196,19 +230,15 @@ void Matrix4x4_VectorITransform( const matrix4x4 in, const float v[3], float out
 void Matrix4x4_VectorRotate( const matrix4x4 in, const float v[3], float out[3] );
 void Matrix4x4_VectorIRotate( const matrix4x4 in, const float v[3], float out[3] );
 void Matrix4x4_ConcatTransforms( matrix4x4 out, const matrix4x4 in1, const matrix4x4 in2 );
-void Matrix4x4_FromOriginQuat( matrix4x4 out, const vec4_t quaternion, const vec3_t origin );
 void Matrix4x4_CreateFromEntity( matrix4x4 out, const vec3_t angles, const vec3_t origin, float scale );
 void Matrix4x4_TransformPositivePlane( const matrix4x4 in, const vec3_t normal, float d, vec3_t out, float *dist );
-void Matrix4x4_TransformStandardPlane( const matrix4x4 in, const vec3_t normal, float d, vec3_t out, float *dist );
 void Matrix4x4_ConvertToEntity( const matrix4x4 in, vec3_t angles, vec3_t origin );
-void Matrix4x4_SetOrigin( matrix4x4 out, float x, float y, float z );
 void Matrix4x4_Invert_Simple( matrix4x4 out, const matrix4x4 in1 );
-void Matrix4x4_OriginFromMatrix( const matrix4x4 in, float *out );
-void Matrix4x4_Transpose( matrix4x4 out, const matrix4x4 in1 );
 qboolean Matrix4x4_Invert_Full( matrix4x4 out, const matrix4x4 in1 );
 
-float V_CalcFov( float *fov_x, float width, float height );
-void V_AdjustFov( float *fov_x, float *fov_y, float width, float height, qboolean lock_x );
+void R_StudioSlerpBones( int numbones, vec4_t q1[], float pos1[][3], const vec4_t q2[], const float pos2[][3], float s );
+void R_StudioCalcBoneQuaternion( int frame, float s, const mstudiobone_t *pbone, const mstudioanim_t *panim, const float *adj, vec4_t q );
+void R_StudioCalcBonePosition( int frame, float s, const mstudiobone_t *pbone, const mstudioanim_t *panim, const vec3_t adj, vec3_t pos );
 
 int BoxOnPlaneSide( const vec3_t emins, const vec3_t emaxs, const mplane_t *p );
 #define BOX_ON_PLANE_SIDE( emins, emaxs, p )			\
@@ -229,8 +259,8 @@ int BoxOnPlaneSide( const vec3_t emins, const vec3_t emaxs, const mplane_t *p );
 
 extern vec3_t		vec3_origin;
 extern int		boxpnt[6][4];
-extern const matrix3x4	matrix3x4_identity;
-extern const matrix4x4	matrix4x4_identity;
+extern const matrix3x4	m_matrix3x4_identity;
+extern const matrix4x4	m_matrix4x4_identity;
 extern const float		m_bytenormals[NUMVERTEXNORMALS][3];
 
 #endif // XASH3D_MATHLIB_H

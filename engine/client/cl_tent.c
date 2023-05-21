@@ -1037,7 +1037,7 @@ void GAME_EXPORT R_BreakModel( const vec3_t pos, const vec3_t size, const vec3_t
 			vecSpot[1] = pos[1] + COM_RandomFloat( -0.5f, 0.5f ) * size[1];
 			vecSpot[2] = pos[2] + COM_RandomFloat( -0.5f, 0.5f ) * size[2];
 
-			if( CL_PointContents( vecSpot ) != CONTENTS_SOLID )
+			if( PM_CL_PointContents( vecSpot, NULL ) != CONTENTS_SOLID )
 				break; // valid spot
 		}
 
@@ -1245,37 +1245,28 @@ apply params for exploding sprite
 */
 void GAME_EXPORT R_Sprite_Explode( TEMPENTITY *pTemp, float scale, int flags )
 {
-	if( !pTemp ) return;
+	qboolean noadditive, drawalpha, rotate;
 
-	if( FBitSet( flags, TE_EXPLFLAG_NOADDITIVE ))
-	{
-		// solid sprite
-		pTemp->entity.curstate.rendermode = kRenderNormal;
-		pTemp->entity.curstate.renderamt = 255;
-	}
-	else if( FBitSet( flags, TE_EXPLFLAG_DRAWALPHA ))
-	{
-		// alpha sprite (came from hl2)
-		pTemp->entity.curstate.rendermode = kRenderTransAlpha;
-		pTemp->entity.curstate.renderamt = 180;
-	}
-	else
-	{
-		// additive sprite
-		pTemp->entity.curstate.rendermode = kRenderTransAdd;
-		pTemp->entity.curstate.renderamt = 180;
-	}
+	if( !pTemp )
+		return;
 
-	if( FBitSet( flags, TE_EXPLFLAG_ROTATE ))
-	{
-		// came from hl2
-		pTemp->entity.angles[2] = COM_RandomLong( 0, 360 );
-	}
+	noadditive = FBitSet( flags, TE_EXPLFLAG_NOADDITIVE );
+	drawalpha  = FBitSet( flags, TE_EXPLFLAG_DRAWALPHA );
+	rotate     = FBitSet( flags, TE_EXPLFLAG_ROTATE );
 
-	pTemp->entity.curstate.renderfx = kRenderFxNone;
-	pTemp->entity.baseline.origin[2] = 8;
-	pTemp->entity.origin[2] += 10;
 	pTemp->entity.curstate.scale = scale;
+	pTemp->entity.baseline.origin[2] = 8.0f;
+	pTemp->entity.origin[2] = pTemp->entity.origin[2] + 10.0f;
+	if( rotate )
+		pTemp->entity.angles[2] = COM_RandomFloat( 0.0, 360.0f );
+
+	pTemp->entity.curstate.rendermode = noadditive ? kRenderNormal :
+		drawalpha ? kRenderTransAlpha : kRenderTransAdd;
+	pTemp->entity.curstate.renderamt  = noadditive ? 0xff : 0xb4;
+	pTemp->entity.curstate.renderfx = 0;
+	pTemp->entity.curstate.rendercolor.r = 0;
+	pTemp->entity.curstate.rendercolor.g = 0;
+	pTemp->entity.curstate.rendercolor.b = 0;
 }
 
 /*
@@ -1482,7 +1473,6 @@ void GAME_EXPORT R_FunnelSprite( const vec3_t org, int modelIndex, int reverse )
 			pTemp->entity.baseline.angles[2] = COM_RandomFloat( -100.0f, 100.0f );
 			pTemp->entity.curstate.framerate = COM_RandomFloat( 0.1f, 0.4f );
 			pTemp->flags = FTENT_ROTATE|FTENT_FADEOUT;
-			pTemp->entity.curstate.framerate = 10;
 
 			vel = dest[2] / 8.0f;
 			if( vel < 64.0f ) vel = 64.0f;
@@ -1905,7 +1895,7 @@ handle temp-entity messages
 void CL_ParseTempEntity( sizebuf_t *msg )
 {
 	sizebuf_t		buf;
-	byte		pbuf[256];
+	byte		pbuf[2048];
 	int		iSize;
 	int		type, color, count, flags;
 	int		decalIndex, modelIndex, entityIndex;
@@ -1923,6 +1913,10 @@ void CL_ParseTempEntity( sizebuf_t *msg )
 	else iSize = MSG_ReadWord( msg );
 
 	decalIndex = modelIndex = entityIndex = 0;
+
+	// this will probably be fatal anyway
+	if( iSize > sizeof( pbuf ))
+		Con_Printf( S_ERROR "%s: Temp buffer overflow!\n", __FUNCTION__ );
 
 	// parse user message into buffer
 	MSG_ReadBytes( msg, pbuf, iSize );
@@ -1971,6 +1965,9 @@ void CL_ParseTempEntity( sizebuf_t *msg )
 		pos[1] = MSG_ReadCoord( &buf );
 		pos[2] = MSG_ReadCoord( &buf );
 		R_BlobExplosion( pos );
+
+		hSound = S_RegisterSound( cl_explode_sounds[0] );
+		S_StartSound( pos, -1, CHAN_AUTO, hSound, VOL_NORM, 1.0f, PITCH_NORM, 0 );
 		break;
 	case TE_SMOKE:
 		pos[0] = MSG_ReadCoord( &buf );
@@ -2024,7 +2021,7 @@ void CL_ParseTempEntity( sizebuf_t *msg )
 		dl->decay = 300;
 
 		hSound = S_RegisterSound( cl_explode_sounds[0] );
-		S_StartSound( pos, 0, CHAN_STATIC, hSound, VOL_NORM, 0.6f, PITCH_NORM, 0 );
+		S_StartSound( pos, -1, CHAN_AUTO, hSound, VOL_NORM, 0.6f, PITCH_NORM, 0 );
 		break;
 	case TE_BSPDECAL:
 	case TE_DECAL:
@@ -2920,9 +2917,17 @@ void CL_PlayerDecal( int playernum, int customIndex, int entityIndex, float *pos
 	{
 		if( FBitSet( pCust->resource.ucFlags, RES_CUSTOM ) && pCust->resource.type == t_decal && pCust->bTranslated )
 		{
-			if( !pCust->nUserData1 && pCust->pInfo != NULL )
+			if( !pCust->nUserData1 )
 			{
-				const char *decalname = va( "player%dlogo%d", playernum, customIndex );
+				int sprayTextureIndex;
+				char decalname[MAX_VA_STRING];
+
+				Q_snprintf( decalname, sizeof( decalname ), "player%dlogo%d", playernum, customIndex );
+				sprayTextureIndex = ref.dllFuncs.GL_FindTexture( decalname );
+				if( sprayTextureIndex != 0 )
+				{
+					ref.dllFuncs.GL_FreeTexture( sprayTextureIndex );
+				}
 				pCust->nUserData1 = GL_LoadTextureInternal( decalname, pCust->pInfo, TF_DECAL );
 			}
 			textureIndex = pCust->nUserData1;

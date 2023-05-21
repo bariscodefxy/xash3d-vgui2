@@ -27,8 +27,14 @@ GNU General Public License for more details.
 #include "studio.h"
 #include "r_efx.h"
 #include "com_image.h"
+#include "filesystem.h"
 
-#define REF_API_VERSION 1
+// RefAPI changelog:
+// 1. Initial release
+// 2. FS functions are removed, instead we have full fs_api_t
+// 3. SlerpBones, CalcBonePosition/Quaternion calls were moved to libpublic/mathlib
+// 4. R_StudioEstimateFrame now has time argument
+#define REF_API_VERSION 4
 
 
 #define TF_SKY		(TF_SKYSIDE|TF_NOMIPMAP)
@@ -63,6 +69,10 @@ GNU General Public License for more details.
 #define FWORLD_WATERALPHA		BIT( 2 )
 #define FWORLD_HAS_DELUXEMAP		BIT( 3 )
 
+// special rendermode for screenfade modulate
+// (probably will be expanded at some point)
+#define kRenderScreenFadeModulate 0x1000
+
 typedef enum
 {
 	DEMO_INACTIVE = 0,
@@ -94,7 +104,6 @@ typedef struct ref_globals_s
 
 	vec3_t vieworg;
 	vec3_t viewangles;
-	vec3_t vforward, vright, vup;
 
 	// todo: fill this without engine help
 	// move to local
@@ -252,7 +261,7 @@ typedef enum
 
 typedef struct ref_api_s
 {
-	int	(*EngineGetParm)( int parm, int arg );	// generic
+	intptr_t (*EngineGetParm)( int parm, int arg );	// generic
 
 	// cvar handlers
 	cvar_t   *(*Cvar_Get)( const char *szName, const char *szValue, int flags, const char *description );
@@ -277,13 +286,13 @@ typedef struct ref_api_s
 	void (*Cbuf_Execute)( void );
 
 	// logging
-	void	(*Con_Printf)( const char *fmt, ... ); // typical console allowed messages
-	void	(*Con_DPrintf)( const char *fmt, ... ); // -dev 1
-	void	(*Con_Reportf)( const char *fmt, ... ); // -dev 2
+	void	(*Con_Printf)( const char *fmt, ... ) _format( 1 ); // typical console allowed messages
+	void	(*Con_DPrintf)( const char *fmt, ... ) _format( 1 ); // -dev 1
+	void	(*Con_Reportf)( const char *fmt, ... ) _format( 1 ); // -dev 2
 
 	// debug print
-	void	(*Con_NPrintf)( int pos, const char *fmt, ... );
-	void	(*Con_NXPrintf)( struct con_nprint_s *info, const char *fmt, ... );
+	void	(*Con_NPrintf)( int pos, const char *fmt, ... ) _format( 2 );
+	void	(*Con_NXPrintf)( struct con_nprint_s *info, const char *fmt, ... ) _format( 2 );
 	void	(*CL_CenterPrint)( const char *s, float y );
 	void (*Con_DrawStringLen)( const char *pText, int *length, int *height );
 	int (*Con_DrawString)( int x, int y, const char *string, rgba_t setColor );
@@ -305,9 +314,6 @@ typedef struct ref_api_s
 	void (*Mod_CreatePolygonsForHull)( int hullnum );
 
 	// studio models
-	void (*R_StudioSlerpBones)( int numbones, vec4_t q1[], float pos1[][3], vec4_t q2[], float pos2[][3], float s );
-	void (*R_StudioCalcBoneQuaternion)( int frame, float s, mstudiobone_t *pbone, mstudioanim_t *panim, float *adj, vec4_t q );
-	void (*R_StudioCalcBonePosition)( int frame, float s, mstudiobone_t *pbone, mstudioanim_t *panim, vec3_t adj, vec3_t pos );
 	void *(*R_StudioGetAnim)( studiohdr_t *m_pStudioHeader, model_t *m_pSubModel, mstudioseqdesc_t *pseqdesc );
 	void	(*pfnStudioEvent)( const struct mstudioevent_s *event, const cl_entity_t *entity );
 
@@ -335,7 +341,7 @@ typedef struct ref_api_s
 
 	// utils
 	void  (*CL_ExtraUpdate)( void );
-	void  (*Host_Error)( const char *fmt, ... );
+	void  (*Host_Error)( const char *fmt, ... ) _format( 1 );
 	void  (*COM_SetRandomSeed)( int lSeed );
 	float (*COM_RandomFloat)( float rmin, float rmax );
 	int   (*COM_RandomLong)( int rmin, int rmax );
@@ -366,13 +372,6 @@ typedef struct ref_api_s
 	void *(*COM_LoadLibrary)( const char *name, int build_ordinals_table, qboolean directpath );
 	void  (*COM_FreeLibrary)( void *handle );
 	void *(*COM_GetProcAddress)( void *handle, const char *name );
-
-	// filesystem
-	byte*	(*COM_LoadFile)( const char *path, fs_offset_t *pLength, qboolean gamedironly );
-	// use Mem_Free instead
-	// void	(*COM_FreeFile)( void *buffer );
-	int (*FS_FileExists)( const char *filename, int gamedironly );
-	void (*FS_AllowDirectPaths)( qboolean enable );
 
 	// video init
 	// try to create window
@@ -430,6 +429,9 @@ typedef struct ref_api_s
 	void	(*pfnDrawNormalTriangles)( void );
 	void	(*pfnDrawTransparentTriangles)( void );
 	render_interface_t	*drawFuncs;
+
+	// filesystem exports
+	fs_api_t	*fsapi;
 } ref_api_t;
 
 struct mip_s;
@@ -498,7 +500,7 @@ typedef struct ref_interface_s
 	void (*R_ClearAllDecals)( void );
 
 	// studio interface
-	float (*R_StudioEstimateFrame)( cl_entity_t *e, mstudioseqdesc_t *pseqdesc );
+	float (*R_StudioEstimateFrame)( cl_entity_t *e, mstudioseqdesc_t *pseqdesc, double time );
 	void (*R_StudioLerpMovement)( cl_entity_t *e, double time, vec3_t origin, vec3_t angles );
 	void (*CL_InitStudioAPI)( void );
 
@@ -626,9 +628,6 @@ typedef struct ref_interface_s
 
 typedef int (*REFAPI)( int version, ref_interface_t *pFunctionTable, ref_api_t* engfuncs, ref_globals_t *pGlobals );
 #define GET_REF_API "GetRefAPI"
-
-typedef void (*REF_HUMANREADABLE_NAME)( char *out, size_t len );
-#define GET_REF_HUMANREADABLE_NAME "GetRefHumanReadableName"
 
 #ifdef REF_DLL
 #define DEFINE_ENGINE_SHARED_CVAR( x, y ) cvar_t *x = NULL;

@@ -34,7 +34,7 @@ void SV_ClientPrintf( sv_client_t *cl, const char *fmt, ... )
 		return;
 
 	va_start( argptr, fmt );
-	Q_vsprintf( string, fmt, argptr );
+	Q_vsnprintf( string, sizeof( string ), fmt, argptr );
 	va_end( argptr );
 
 	MSG_BeginServerCmd( &cl->netchan.message, svc_print );
@@ -56,7 +56,7 @@ void SV_BroadcastPrintf( sv_client_t *ignore, const char *fmt, ... )
 	int		i;
 
 	va_start( argptr, fmt );
-	Q_vsprintf( string, fmt, argptr );
+	Q_vsnprintf( string, sizeof( string ), fmt, argptr );
 	va_end( argptr );
 
 	if( sv.state == ss_active )
@@ -97,7 +97,7 @@ void SV_BroadcastCommand( const char *fmt, ... )
 		return;
 
 	va_start( argptr, fmt );
-	Q_vsprintf( string, fmt, argptr );
+	Q_vsnprintf( string, sizeof( string ), fmt, argptr );
 	va_end( argptr );
 
 	MSG_BeginServerCmd( &sv.reliable_datagram, svc_stufftext );
@@ -249,7 +249,7 @@ void SV_Maps_f( void )
 
 	if( Cmd_Argc() != 2 )
 	{
-		Msg( "Usage: maps <substring>\nmaps * for full listing\n" );
+		Msg( S_USAGE "maps <substring>\nmaps * for full listing\n" );
 		return;
 	}
 
@@ -265,7 +265,7 @@ void SV_Maps_f( void )
 
 	Mem_Free( mapList );
 
-	Msg( "%s\nDirectory: \"%s/maps\" - Maps listed: %d\n", separator, GI->basedir, nummaps );
+	Msg( "%s\nDirectory: \"%s/maps\" - Maps listed: %d\n", separator, GI->gamefolder, nummaps );
 }
 
 /*
@@ -337,12 +337,12 @@ void SV_NextMap_f( void )
 		if( Q_stricmp( ext, "bsp" ))
 			continue;
 
-		COM_FileBase( t->filenames[i], nextmap );
+		COM_FileBase( t->filenames[i], nextmap, sizeof( nextmap ));
 		if( Q_stricmp( sv_hostmap->string, nextmap ))
 			continue;
 
 		next = ( i + 1 ) % t->numfilenames;
-		COM_FileBase( t->filenames[next], nextmap );
+		COM_FileBase( t->filenames[next], nextmap, sizeof( nextmap ));
 		Cvar_DirectSet( sv_hostmap, nextmap );
 
 		// found current point, check for valid
@@ -394,7 +394,7 @@ void SV_HazardCourse_f( void )
 	// special case for Gunman Chronicles: playing avi-file
 	if( FS_FileExists( va( "media/%s.avi", GI->trainmap ), false ))
 	{
-		Cbuf_AddText( va( "wait; movie %s\n", GI->trainmap ));
+		Cbuf_AddTextf( "wait; movie %s\n", GI->trainmap );
 		Host_EndGame( true, DEFAULT_ENDGAME_MESSAGE );
 	}
 	else COM_NewGame( GI->trainmap );
@@ -439,18 +439,23 @@ SV_Save_f
 */
 void SV_Save_f( void )
 {
+	qboolean ret = false;
+
 	switch( Cmd_Argc( ))
 	{
 	case 1:
-		SV_SaveGame( "new" );
+		ret = SV_SaveGame( "new" );
 		break;
 	case 2:
-		SV_SaveGame( Cmd_Argv( 1 ));
+		ret = SV_SaveGame( Cmd_Argv( 1 ));
 		break;
 	default:
 		Con_Printf( S_USAGE "save <savename>\n" );
 		break;
 	}
+
+	if( ret && CL_Active() && !FBitSet( host.features, ENGINE_QUAKE_COMPATIBLE ))
+		CL_HudMessage( "GAMESAVED" ); // defined in titles.txt
 }
 
 /*
@@ -497,7 +502,8 @@ void SV_AutoSave_f( void )
 		return;
 	}
 
-	SV_SaveGame( "autosave" );
+	if( Cvar_VariableInteger( "sv_autosave" ) )
+		SV_SaveGame( "autosave" );
 }
 
 /*
@@ -578,7 +584,7 @@ Kick a user off of the server
 void SV_Kick_f( void )
 {
 	sv_client_t	*cl;
-	const char *param, *clientId;
+	const char *param;
 
 	if( Cmd_Argc() != 2 )
 	{
@@ -598,38 +604,7 @@ void SV_Kick_f( void )
 		return;
 	}
 
-	if( NET_IsLocalAddress( cl->netchan.remote_address ))
-	{
-		Con_Printf( "The local player cannot be kicked!\n" );
-		return;
-	}
-
-	param = Cmd_Argv( 2 );
-
-	clientId = SV_GetClientIDString( cl );
-
-	if( *param )
-	{
-		Log_Printf( "Kick: \"%s<%i><%s><>\" was kicked by \"Console\" (message \"%s\")\n", cl->name, cl->userid, clientId, param );
-		SV_BroadcastPrintf( cl, "%s was kicked with message: \"%s\"\n", cl->name, param );
-		SV_ClientPrintf( cl, "You were kicked from the game with message: \"%s\"\n", param );
-	}
-	else
-	{
-		Log_Printf( "Kick: \"%s<%i><%s><>\" was kicked by \"Console\"\n", cl->name, cl->userid, clientId );
-		SV_BroadcastPrintf( cl, "%s was kicked\n", cl->name );
-		SV_ClientPrintf( cl, "You were kicked from the game\n" );
-	}
-
-	if( cl->useragent[0] )
-	{
-		if( *param )
-			Netchan_OutOfBandPrint( NS_SERVER, cl->netchan.remote_address, "errormsg\nKicked with message:\n%s\n", param );
-		else
-			Netchan_OutOfBandPrint( NS_SERVER, cl->netchan.remote_address, "errormsg\nYou were kicked from the game\n" );
-	}
-
-	SV_DropClient( cl, false );
+	SV_KickPlayer( cl, "%s", Cmd_Argv( 2 ));
 }
 
 /*
@@ -743,9 +718,9 @@ void SV_ConSay_f( void )
 SV_Heartbeat_f
 ==================
 */
-void SV_Heartbeat_f( void )
+static void SV_Heartbeat_f( void )
 {
-	svs.last_heartbeat = MAX_HEARTBEAT;
+	NET_MasterClear();
 }
 
 /*
@@ -763,7 +738,7 @@ void SV_ServerInfo_f( void )
 	{
 		Con_Printf( "Server info settings:\n" );
 		Info_Print( svs.serverinfo );
-		Con_Printf( "Total %i symbols\n", Q_strlen( svs.serverinfo ));
+		Con_Printf( "Total %lu symbols\n", Q_strlen( svs.serverinfo ));
 		return;
 	}
 
@@ -805,7 +780,7 @@ void SV_LocalInfo_f( void )
 	{
 		Con_Printf( "Local info settings:\n" );
 		Info_Print( svs.localinfo );
-		Con_Printf( "Total %i symbols\n", Q_strlen( svs.localinfo ));
+		Con_Printf( "Total %lu symbols\n", Q_strlen( svs.localinfo ));
 		return;
 	}
 

@@ -518,14 +518,26 @@ CL_ReadDemoCmdHeader
 read the demo command
 =================
 */
-void CL_ReadDemoCmdHeader( byte *cmd, float *dt )
+qboolean CL_ReadDemoCmdHeader( byte *cmd, float *dt )
 {
 	// read the command
-	FS_Read( cls.demofile, cmd, sizeof( byte ));
-	Assert( *cmd >= 1 && *cmd <= dem_lastcmd );
+	// HACKHACK: skip NOPs
+	do
+	{
+		FS_Read( cls.demofile, cmd, sizeof( byte ));
+	} while( *cmd == dem_unknown );
+
+	if( *cmd > dem_lastcmd )
+	{
+		Con_Printf( S_ERROR "Demo cmd %d > %d, file offset = %d\n", *cmd, dem_lastcmd, (int)FS_Tell( cls.demofile ));
+		CL_DemoCompleted();
+		return false;
+	}
 
 	// read the timestamp
 	FS_Read( cls.demofile, dt, sizeof( float ));
+
+	return true;
 }
 
 /*
@@ -888,7 +900,7 @@ qboolean CL_DemoReadMessage( byte *buffer, size_t *length )
 	qboolean		swallowmessages = true;
 	static int	tdlastdemoframe = 0;
 	byte		*userbuf = NULL;
-	size_t		size;
+	size_t		size = 0;
 	byte		cmd;
 
 	if( !cls.demofile )
@@ -913,7 +925,8 @@ qboolean CL_DemoReadMessage( byte *buffer, size_t *length )
 		if( !cls.demofile ) break;
 		curpos = FS_Tell( cls.demofile );
 
-		CL_ReadDemoCmdHeader( &cmd, &demo.timestamp );
+		if( !CL_ReadDemoCmdHeader( &cmd, &demo.timestamp ))
+			return false;
 
 		fElapsedTime = CL_GetDemoPlaybackClock() - demo.starttime;
 		if( !cls.timedemo ) bSkipMessage = ((demo.timestamp - cl_serverframetime()) >= fElapsedTime) ? true : false;
@@ -1304,16 +1317,16 @@ void CL_CheckStartupDemos( void )
 CL_DemoGetName
 ==================
 */
-static void CL_DemoGetName( int lastnum, char *filename )
+static void CL_DemoGetName( int lastnum, char *filename, size_t size )
 {
 	if( lastnum < 0 || lastnum > 9999 )
 	{
 		// bound
-		Q_strcpy( filename, "demo9999" );
+		Q_strncpy( filename, "demo9999.dem", size );
 		return;
 	}
 
-	Q_sprintf( filename, "demo%04d", lastnum );
+	Q_snprintf( filename, size, "demo%04d.dem", lastnum );
 }
 
 /*
@@ -1367,8 +1380,8 @@ void CL_Record_f( void )
 		// scan for a free filename
 		for( n = 0; n < 10000; n++ )
 		{
-			CL_DemoGetName( n, demoname );
-			if( !FS_FileExists( va( "%s.dem", demoname ), true ))
+			CL_DemoGetName( n, demoname, sizeof( demoname ));
+			if( !FS_FileExists( demoname, true ))
 				break;
 		}
 
@@ -1381,7 +1394,7 @@ void CL_Record_f( void )
 	else Q_strncpy( demoname, name, sizeof( demoname ));
 
 	// open the demo file
-	Q_sprintf( demopath, "%s.dem", demoname );
+	Q_snprintf( demopath, sizeof( demopath ), "%s.dem", demoname );
 
 	// make sure that old demo is removed
 	if( FS_FileExists( demopath, false ))
@@ -1408,7 +1421,7 @@ void CL_PlayDemo_f( void )
 
 	if( Cmd_Argc() < 2 )
 	{
-		Con_Printf( S_USAGE "playdemo <demoname>\n" );
+		Con_Printf( S_USAGE "%s <demoname>\n", Cmd_Argv( 0 ));
 		return;
 	}
 
@@ -1535,12 +1548,6 @@ timedemo <demoname>
 */
 void CL_TimeDemo_f( void )
 {
-	if( Cmd_Argc() != 2 )
-	{
-		Con_Printf( S_USAGE "timedemo <demoname>\n" );
-		return;
-	}
-
 	CL_PlayDemo_f ();
 
 	// cls.td_starttime will be grabbed at the second frame of the demo, so

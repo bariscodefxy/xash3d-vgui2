@@ -39,22 +39,20 @@ GNU General Public License for more details.
 
 	#if XASH_POSIX
 		#include <unistd.h>
-		#include <dlfcn.h>
-
-		#define PATH_SPLITTER "/"
-		#define HAVE_DUP
-
-		#define O_BINARY    0
-		#define O_TEXT      0
+		#if XASH_NSWITCH
+			#define SOLDER_LIBDL_COMPAT
+			#include <solder.h>
+		#elif XASH_PSVITA
+			#define VRTLD_LIBDL_COMPAT
+			#include <vrtld.h>
+			#define O_BINARY 0
+		#else
+			#include <dlfcn.h>
+			#define HAVE_DUP
+			#define O_BINARY 0
+		#endif
+		#define O_TEXT 0
 		#define _mkdir( x ) mkdir( x, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH )
-		#define LoadLibrary( x ) dlopen( x, RTLD_NOW )
-		#define GetProcAddress( x, y ) dlsym( x, y )
-		#define FreeLibrary( x ) dlclose( x )
-	#elif XASH_DOS4GW
-		#define PATH_SPLITTER "\\"
-		#define LoadLibrary( x ) (0)
-		#define GetProcAddress( x, y ) (0)
-		#define FreeLibrary( x ) (0)
 	#endif
 
 	typedef void* HANDLE;
@@ -65,7 +63,6 @@ GNU General Public License for more details.
 		int x, y;
 	} POINT;
 #else // WIN32
-	#define PATH_SPLITTER "\\"
 	#ifdef __MINGW32__
 		#define _inline static inline
 		#define FORCEINLINE inline __attribute__((always_inline))

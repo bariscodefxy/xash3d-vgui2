@@ -711,6 +711,7 @@ void SV_SendClientDatagram( sv_client_t *cl )
 	byte	msg_buf[MAX_DATAGRAM];
 	sizebuf_t	msg;
 
+	memset( msg_buf, 0, sizeof( msg_buf ));
 	MSG_Init( &msg, "Datagram", msg_buf, sizeof( msg_buf ));
 
 	// always send servertime at new frame
@@ -924,30 +925,6 @@ void SV_SendClientMessages( void )
 
 	// reset current client
 	sv.current_client = NULL;
-}
-
-/*
-=======================
-SV_SendMessagesToAll
-
-e.g. before changing level
-=======================
-*/
-void SV_SendMessagesToAll( void )
-{
-	sv_client_t	*cl;
-	int		i;
-
-	if( sv.state == ss_dead )
-		return;
-
-	for( i = 0, cl = svs.clients; i < svs.maxclients; i++, cl++ )
-	{
-		if( cl->state >= cs_connected )
-			SetBits( cl->flags, FCL_SEND_NET_MESSAGE );
-	}
-
-	SV_SendClientMessages();
 }
 
 /*

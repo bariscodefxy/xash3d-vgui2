@@ -25,6 +25,9 @@ mobile_engfuncs_t *gMobileEngfuncs;
 convar_t *vibration_length;
 convar_t *vibration_enable;
 
+static cl_font_t g_scaled_font;
+static float g_font_scale;
+
 static void pfnVibrate( float life, char flags )
 {
 	if( !vibration_enable->value )
@@ -60,28 +63,28 @@ static void pfnEnableTextInput( int enable )
 
 static int pfnDrawScaledCharacter( int x, int y, int number, int r, int g, int b, float scale )
 {
-	int width  = clgame.scrInfo.charWidths[number] * scale * hud_scale->value;
-	int height = clgame.scrInfo.iCharHeight        * scale * hud_scale->value;
+	// this call is very ineffective and possibly broken!
+	rgba_t color = { r, g, b, 255 };
+	int flags = FONT_DRAW_HUD;
 
-	if( !cls.creditsFont.valid )
-		return 0;
+	if( hud_utf8->value )
+		SetBits( flags, FONT_DRAW_UTF8 );
 
-	x *= hud_scale->value;
-	y *= hud_scale->value;
+	if( fabs( g_font_scale - scale ) > 0.1f ||
+		g_scaled_font.hFontTexture != cls.creditsFont.hFontTexture )
+	{
+		int i;
 
-	number &= 255;
-	number = Con_UtfProcessChar( number );
+		g_scaled_font = cls.creditsFont;
+		g_scaled_font.scale *= scale;
+		g_scaled_font.charHeight *= scale;
+		for( i = 0; i < ARRAYSIZE( g_scaled_font.charWidths ); i++ )
+			g_scaled_font.charWidths[i] *= scale;
 
-	if( number < 32 )
-		return 0;
+		g_font_scale = scale;
+	}
 
-	if( y < -height )
-		return 0;
-
-	pfnPIC_Set( cls.creditsFont.hFontTexture, r, g, b, 255 );
-	pfnPIC_DrawAdditive( x, y, width, height, &cls.creditsFont.fontRc[number] );
-
-	return width;
+	return CL_DrawCharacter( x, y, number, color, &g_scaled_font, flags );
 }
 
 static void *pfnGetNativeObject( const char *obj )
@@ -103,6 +106,11 @@ static void pfnTouch_RemoveButton( const char *name )
 	Touch_RemoveButton( name, true );
 }
 
+static char *pfnParseFileSafe( char *data, char *buf, const int size, unsigned int flags, int *len )
+{
+	return COM_ParseFileSafe( data, buf, size, flags, len, NULL );
+}
+
 static mobile_engfuncs_t gpMobileEngfuncs =
 {
 	MOBILITY_API_VERSION,
@@ -118,7 +126,7 @@ static mobile_engfuncs_t gpMobileEngfuncs =
 	Sys_Warn,
 	pfnGetNativeObject,
 	ID_SetCustomClientID,
-	_COM_ParseFileSafe
+	pfnParseFileSafe
 };
 
 qboolean Mobile_Init( void )

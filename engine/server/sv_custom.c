@@ -304,7 +304,7 @@ qboolean SV_CheckFile( sizebuf_t *msg, const char *filename )
 		return true;
 
 	MSG_BeginServerCmd( msg, svc_stufftext );
-	MSG_WriteString( msg, va( "upload \"!MD5%s\"\n", MD5_Print( p.rgucMD5_hash )));
+	MSG_WriteStringf( msg, "upload \"!MD5%s\"\n", MD5_Print( p.rgucMD5_hash ));
 
 	return false;
 }
@@ -533,7 +533,7 @@ void SV_BatchUploadRequest( sv_client_t *cl )
 
 void SV_SendResource( resource_t *pResource, sizebuf_t *msg )
 {
-	static byte	nullrguc[36];
+	static byte	nullrguc[sizeof( pResource->rguc_reserved )];
 
 	MSG_WriteUBitLong( msg, pResource->type, 4 );
 	MSG_WriteString( msg, pResource->szFileName );

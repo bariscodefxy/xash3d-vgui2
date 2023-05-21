@@ -15,6 +15,7 @@ GNU General Public License for more details.
 
 #include <SDL.h>
 #include "platform/platform.h"
+#include "events.h"
 
 #if XASH_TIMER == TIMER_SDL
 double Platform_DoubleTime( void )
@@ -61,17 +62,30 @@ void Platform_Init( void )
 	SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
 	SDL_StopTextInput();
 #endif // XASH_SDL == 2
-#if XASH_POSIX
-	Posix_Daemonize();
-#endif
-#ifdef XASH_WIN32
+
+#if XASH_WIN32
 	Wcon_CreateConsole(); // system console used by dedicated server or show fatal errors
+#elif XASH_POSIX
+	Posix_Daemonize();
+#if XASH_PSVITA
+	PSVita_Init();
+#elif XASH_NSWITCH
+	NSwitch_Init();
 #endif
+#endif // XASH_POSIX
+
+	SDLash_InitCursors();
 }
 
 void Platform_Shutdown( void )
 {
-#ifdef XASH_WIN32
+	SDLash_FreeCursors();
+
+#if XASH_NSWITCH
+	NSwitch_Shutdown();
+#elif XASH_WIN32
 	Wcon_DestroyConsole();
+#elif XASH_PSVITA
+	PSVita_Shutdown();
 #endif
 }

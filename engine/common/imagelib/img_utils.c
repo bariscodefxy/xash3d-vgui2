@@ -96,8 +96,8 @@ static const loadpixformat_t load_null[] =
 static const loadpixformat_t load_game[] =
 {
 { "%s%s.%s", "dds", Image_LoadDDS, IL_HINT_NO },	// dds for world and studio models
-{ "%s%s.%s", "tga", Image_LoadTGA, IL_HINT_NO },	// hl vgui menus
 { "%s%s.%s", "bmp", Image_LoadBMP, IL_HINT_NO },	// WON menu images
+{ "%s%s.%s", "tga", Image_LoadTGA, IL_HINT_NO },	// hl vgui menus
 { "%s%s.%s", "png", Image_LoadPNG, IL_HINT_NO },	// NightFire 007 menus
 { "%s%s.%s", "mip", Image_LoadMIP, IL_HINT_NO },	// hl textures from wad or buffer
 { "%s%s.%s", "mdl", Image_LoadMDL, IL_HINT_HL },	// hl studio model skins
@@ -237,7 +237,16 @@ void Image_AddCmdFlags( uint flags )
 
 qboolean Image_ValidSize( const char *name )
 {
-	if( image.width > IMAGE_MAXWIDTH || image.height > IMAGE_MAXHEIGHT || image.width <= 0 || image.height <= 0 )
+	int max_width = IMAGE_MAXWIDTH;
+	int max_height = IMAGE_MAXHEIGHT;
+
+	if( Image_CheckFlag( IL_LOAD_PLAYER_DECAL ))
+	{
+		max_width = PLDECAL_MAXWIDTH;
+		max_height = PLDECAL_MAXHEIGHT;
+	}
+
+	if( image.width > max_width || image.height > max_height || image.width <= 0 || image.height <= 0 )
 	{
 		Con_DPrintf( S_ERROR "Image: (%s) dims out of range [%dx%d]\n", name, image.width, image.height );
 		return false;
